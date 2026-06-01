@@ -1,0 +1,31 @@
+{
+  "name": "rona-desk",
+  "productName": "Rona Desk",
+  "version": "0.1.0",
+  "description": "Rona 맞춤 스킬 학습 현황 데스크탑 동행 펫 (Coco)",
+  "main": "dist/main/index.js",
+  "author": "Geniefy",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "gen:icons": "node scripts/gen-tray-icons.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "npm run gen:icons && npm run build && electron .",
+    "dist": "npm run gen:icons && npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "electron": "^31.7.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9",
+    "glob": "^11.0.0"
+  }
+}

@@ -1,0 +1,27 @@
+appId: com.geniefy.rona-desk
+productName: Rona Desk
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json
+extraMetadata:
+  main: dist/main/index.js
+mac:
+  category: public.app-category.education
+  icon: build/icon.png
+  # E1 default(v1): ad-hoc 서명, notarization 없음. 넓은 입문자 배포 전 Developer ID 권장.
+  identity: null
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  extendInfo:
+    LSUIElement: 1 # 메뉴바 전용(Dock 미표시)
+# electron-updater + GitHub releases (clawd-on-desk 동형 실측)
+publish:
+  provider: github
+  owner: REPLACE_GH_OWNER # TODO: rona-desk 레포 GitHub owner 확정 후 교체
+  repo: rona-desk
