@@ -23,5 +23,5 @@ mac:
 # electron-updater + GitHub releases (clawd-on-desk 동형 실측)
 publish:
   provider: github
-  owner: REPLACE_GH_OWNER # TODO: rona-desk 레포 GitHub owner 확정 후 교체
+  owner: chat-prompt
   repo: rona-desk
