@@ -8,6 +8,8 @@ files:
   - package.json
 extraMetadata:
   main: dist/main/index.js
+# 빌드 후 번들 전체 ad-hoc 재서명(다운로드 시 "손상됨" 방지). build/afterPack.cjs 참고.
+afterPack: build/afterPack.cjs
 mac:
   category: public.app-category.education
   icon: build/icon.png
