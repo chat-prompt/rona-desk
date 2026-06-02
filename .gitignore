@@ -7,9 +7,11 @@ release/
 build/icon.png
 build/icons/
 
-# 시연용 — 실제 install_token 하드코딩, 커밋 금지
+# 시연용 — 실제 install_token 하드코딩 / 개발 전용, 커밋 금지
 src/renderer/demo.ts
 src/renderer/live-demo.ts
+src/renderer/gallery.ts
 scripts/screenshot-demo.mjs
 scripts/live-capture.mjs
+scripts/gallery-capture.mjs
 scripts/verify-scan.mts

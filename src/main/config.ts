@@ -1,5 +1,6 @@
 // 영속 설정 (electron-store). 기본 API base = https://rona.so.
 import Store from "electron-store";
+import type { ThemeMode } from "../shared/types";
 
 interface ConfigShape {
   baseUrl: string;
@@ -7,8 +8,18 @@ interface ConfigShape {
   scanRoots: string[];
   /** 마커를 못 찾을 때 수동 입력한 install_token(들). (fallback) */
   manualTokens: string[];
+  /** 앱에서 숨긴 스킬 token(들). 마커는 그대로 두고 추적/표시에서만 제외. */
+  dismissedTokens: string[];
   /** DND 해제 시각(epoch ms). null=꺼짐. */
   dndUntil: number | null;
+  /** 창 위치 고정(pin). true=트레이 스냅 안 하고 저장 좌표 유지. */
+  windowPinned: boolean;
+  /** pin 시 저장한 창 좌상단 좌표(DIP). null=없음. */
+  windowPosition: { x: number; y: number } | null;
+  /** 사용자가 조절한 창 크기(DIP). null=기본 크기. (pin 무관, 전역 선호) */
+  windowSize: { width: number; height: number } | null;
+  /** 테마: system=OS 따름, light/dark=강제. */
+  theme: ThemeMode;
 }
 
 const store = new Store<ConfigShape>({
@@ -16,7 +27,12 @@ const store = new Store<ConfigShape>({
     baseUrl: "https://rona.so",
     scanRoots: [],
     manualTokens: [],
+    dismissedTokens: [],
     dndUntil: null,
+    windowPinned: false,
+    windowPosition: null,
+    windowSize: null,
+    theme: "system",
   },
 });
 
@@ -43,10 +59,40 @@ export const config = {
     t.add(token);
     store.set("manualTokens", [...t]);
   },
+  removeManualToken: (token: string): void => {
+    store.set(
+      "manualTokens",
+      store.get("manualTokens").filter((t) => t !== token),
+    );
+  },
+
+  dismissedTokens: (): string[] => store.get("dismissedTokens"),
+  addDismissedToken: (token: string): void => {
+    const t = new Set(store.get("dismissedTokens"));
+    t.add(token);
+    store.set("dismissedTokens", [...t]);
+  },
+  removeDismissedToken: (token: string): void => {
+    store.set(
+      "dismissedTokens",
+      store.get("dismissedTokens").filter((t) => t !== token),
+    );
+  },
 
   dndActive: (): boolean => {
     const until = store.get("dndUntil");
     return until !== null && until > Date.now();
   },
   setDnd: (until: number | null): void => store.set("dndUntil", until),
+
+  windowPinned: (): boolean => store.get("windowPinned"),
+  setWindowPinned: (on: boolean): void => store.set("windowPinned", on),
+  windowPosition: (): { x: number; y: number } | null => store.get("windowPosition"),
+  setWindowPosition: (pos: { x: number; y: number }): void => store.set("windowPosition", pos),
+
+  windowSize: (): { width: number; height: number } | null => store.get("windowSize"),
+  setWindowSize: (size: { width: number; height: number }): void => store.set("windowSize", size),
+
+  theme: (): ThemeMode => store.get("theme"),
+  setTheme: (mode: ThemeMode): void => store.set("theme", mode),
 };

@@ -2,7 +2,7 @@
 // 고정 60s(adaptive 는 v2). 이전 lastEvent 와 diff 해 신규 이벤트 감지.
 import type { ProgressData, SkillEventType, SkillStatus } from "../shared/types";
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 20_000;
 
 async function fetchProgress(baseUrl: string, token: string): Promise<ProgressData | null> {
   const res = await fetch(`${baseUrl}/skill/api/progress/${token}`, {
@@ -55,9 +55,10 @@ export class Poller {
         const data = await fetchProgress(baseUrl, token).catch(() => null);
 
         if (data) {
-          const prevLast = prev?.data?.progress.lastEvent?.occurredAt ?? null;
           const curLast = data.progress.lastEvent;
-          if (curLast && curLast.occurredAt !== prevLast) {
+          // 신규 이벤트 = "이미 데이터 베이스라인을 본 토큰"에서 lastEvent 가 바뀐 경우만.
+          // 첫 데이터(실행 직후·신규 토큰·offline 복구)는 과거 기록이므로 창을 띄우지 않는다.
+          if (prev?.data && curLast && curLast.occurredAt !== prev.data.progress.lastEvent?.occurredAt) {
             newEvents.set(token, curLast.eventType);
           }
           this.statuses.set(token, {

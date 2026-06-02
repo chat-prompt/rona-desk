@@ -1,6 +1,6 @@
 // 의존성 0 PNG 생성기 (zlib + 직접 PNG 인코딩). sharp/resvg 불필요.
-// 코코(Coco) 트레이 글리프 3위상(seed/sprout/bloom) × {16,32}px + 앱 아이콘 512.
-// 패널 안의 코코는 라이브 인라인 SVG 라 래스터화 안 함 — 여기는 메뉴바 글리프 전용.
+// 중립 진행 마크 3위상(seed/sprout/bloom) × {16,32}px + 앱 아이콘 512.
+// 캐릭터성 없는 메뉴바 진행 pip 전용 (빈 링→링+점→꽉 찬 원).
 import zlib from "node:zlib";
 import { writeFileSync, mkdirSync } from "node:fs";
 
@@ -52,8 +52,7 @@ function encodePng(size, rgba) {
 }
 
 const CORAL = [242, 100, 92]; // Warm Coral #F2645C
-const CORAL_DARK = [199, 70, 63];
-const LEAF = [122, 178, 110]; // 새싹 녹색 (성장 글리프 강조)
+const MUTED = [150, 150, 158]; // 대기(미시작) 링
 
 function disc(rgba, size, cx, cy, r, color, a = 255) {
   for (let y = 0; y < size; y++) {
@@ -71,25 +70,26 @@ function disc(rgba, size, cx, cy, r, color, a = 255) {
   }
 }
 
-// 코코: 둥근 씨앗 본체(코랄) + 위상별 성장 글리프. 단색 + 살짝 어두운 윤곽.
-function drawCoco(size, phase) {
+// 가운데를 투명으로 비워 도넛(링)을 만든다.
+function ring(rgba, size, cx, cy, rOuter, rInner, color) {
+  disc(rgba, size, cx, cy, rOuter, color);
+  disc(rgba, size, cx, cy, rInner, color, 0); // a=0 → 가운데 투명
+}
+
+// 중립 진행 pip — 캐릭터성 없음. 위상별 진행도만 표현(빈 링→링+점→꽉 찬 원).
+// 16px 메뉴바에서 강한 실루엣, light/dark 무관하게 코랄/회색으로 읽힘.
+function drawMark(size, phase) {
   const rgba = Buffer.alloc(size * size * 4); // 투명
   const cx = size / 2;
-  const cy = size * 0.62;
-  const r = size * 0.3;
-  disc(rgba, size, cx, cy, r + Math.max(1, size * 0.04), CORAL_DARK); // 윤곽
-  disc(rgba, size, cx, cy, r, CORAL); // 본체
-  // 눈 2개 (작은 투명 점) — bloom 에서만 명확, 작은 사이즈는 생략
-  if (size >= 32) {
-    disc(rgba, size, cx - r * 0.35, cy - r * 0.15, size * 0.04, [255, 255, 255]);
-    disc(rgba, size, cx + r * 0.35, cy - r * 0.15, size * 0.04, [255, 255, 255]);
-  }
-  // 성장 글리프
-  if (phase === "sprout") {
-    disc(rgba, size, cx, size * 0.28, size * 0.09, LEAF);
-  } else if (phase === "bloom") {
-    disc(rgba, size, cx, size * 0.24, size * 0.13, LEAF);
-    disc(rgba, size, cx, size * 0.14, size * 0.07, CORAL); // 꽃 한 점
+  const cy = size / 2;
+  const R = size * 0.4;
+  if (phase === "bloom") {
+    disc(rgba, size, cx, cy, R, CORAL); // 꽉 찬 원 = 완주
+  } else if (phase === "sprout") {
+    ring(rgba, size, cx, cy, R, R * 0.52, CORAL); // 코랄 링
+    disc(rgba, size, cx, cy, R * 0.3, CORAL); // + 중심 점 = 진행 중
+  } else {
+    ring(rgba, size, cx, cy, R, R * 0.55, MUTED); // 빈 회색 링 = 대기
   }
   return rgba;
 }
@@ -99,9 +99,9 @@ mkdirSync("build", { recursive: true });
 
 for (const phase of ["seed", "sprout", "bloom"]) {
   for (const size of [16, 32]) {
-    writeFileSync(`dist/icons/coco-${phase}-${size}.png`, encodePng(size, drawCoco(size, phase)));
+    writeFileSync(`dist/icons/mark-${phase}-${size}.png`, encodePng(size, drawMark(size, phase)));
   }
 }
-writeFileSync("build/icon.png", encodePng(512, drawCoco(512, "bloom")));
+writeFileSync("build/icon.png", encodePng(512, drawMark(512, "bloom")));
 
-console.log("tray icons (seed/sprout/bloom @16,32) + app icon 512 generated");
+console.log("tray marks (seed/sprout/bloom @16,32) + app icon 512 generated");

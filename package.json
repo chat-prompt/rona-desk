@@ -1,8 +1,8 @@
 {
   "name": "rona-desk",
   "productName": "Rona Desk",
-  "version": "0.1.0",
-  "description": "Rona 맞춤 스킬 학습 현황 데스크탑 동행 펫 (Coco)",
+  "version": "0.1.1",
+  "description": "Rona 맞춤 스킬 학습 현황 데스크탑 앱",
   "main": "dist/main/index.js",
   "author": "Geniefy",
   "license": "UNLICENSED",

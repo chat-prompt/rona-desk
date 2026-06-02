@@ -10,10 +10,16 @@ const api: RonaApi = {
   },
   getConfig: () => ipcRenderer.invoke("config:get"),
   addScanRoot: () => ipcRenderer.invoke("config:addScanRoot"),
+  removeScanRoot: (dir) => ipcRenderer.invoke("config:removeScanRoot", dir),
   addManualToken: (token) => ipcRenderer.invoke("config:addManualToken", token),
+  removeManualToken: (token) => ipcRenderer.invoke("config:removeManualToken", token),
   setBaseUrl: (url) => ipcRenderer.invoke("config:setBaseUrl", url),
+  setDnd: (on) => ipcRenderer.invoke("config:setDnd", on),
+  setWindowPinned: (on) => ipcRenderer.invoke("config:setWindowPinned", on),
+  setTheme: (mode) => ipcRenderer.invoke("config:setTheme", mode),
+  dismissSkill: (token) => ipcRenderer.invoke("config:dismissSkill", token),
+  restoreSkill: (token) => ipcRenderer.invoke("config:restoreSkill", token),
   rescan: () => ipcRenderer.invoke("rescan"),
-  openProgressHtml: (token) => ipcRenderer.invoke("openProgressHtml", token),
 };
 
 contextBridge.exposeInMainWorld("rona", api);

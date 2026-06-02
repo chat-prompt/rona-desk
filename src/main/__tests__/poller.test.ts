@@ -41,14 +41,14 @@ describe("Poller diff", () => {
       (r) => results.push(r),
     );
 
-    await p.tick(); // 최초: null → event 도착 = 신규
-    expect(results[0].newEvents.get("tok")).toBe("checkpoint_saved");
+    await p.tick(); // 최초: 베이스라인 확립 → 과거 기록으로 팝업 안 함(신규 없음)
+    expect(results[0].newEvents.has("tok")).toBe(false);
 
     await p.tick(); // 동일 occurredAt → 신규 없음
     expect(results[1].newEvents.has("tok")).toBe(false);
 
     occurredAt = "2026-06-01T02:00:00Z";
-    await p.tick(); // 변화 → 신규
+    await p.tick(); // 베이스라인 이후 변화 → 신규 (앱이 보는 중 실제 도착)
     expect(results[2].newEvents.get("tok")).toBe("checkpoint_saved");
   });
 
