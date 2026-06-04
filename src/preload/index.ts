@@ -11,7 +11,6 @@ const api: RonaApi = {
   getConfig: () => ipcRenderer.invoke("config:get"),
   setBaseUrl: (url) => ipcRenderer.invoke("config:setBaseUrl", url),
   setDnd: (on) => ipcRenderer.invoke("config:setDnd", on),
-  setWindowPinned: (on) => ipcRenderer.invoke("config:setWindowPinned", on),
   setTheme: (mode) => ipcRenderer.invoke("config:setTheme", mode),
   dismissSkill: (token) => ipcRenderer.invoke("config:dismissSkill", token),
   restoreSkill: (token) => ipcRenderer.invoke("config:restoreSkill", token),

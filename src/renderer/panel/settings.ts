@@ -49,16 +49,6 @@ export function renderSettings(c: ConfigSnapshot): string {
       </div>
     </div>
 
-    <div class="set-sec">
-      <div class="set-row" style="justify-content:space-between;padding-top:0">
-        <span class="set-label" style="margin:0">창 위치 고정</span>
-        <button class="toggle${c.windowPinned ? " toggle--on" : ""}" data-action="toggle-pin" role="switch" aria-checked="${c.windowPinned}" aria-label="창 위치 고정">
-          <span class="toggle-knob"></span>
-        </button>
-      </div>
-      <p class="set-hint" style="margin-top:6px">제목 부분을 잡고 다른 디스플레이로 옮겨요. 켜면 그 자리에 고정, 끄면 트레이 아래로 따라와요.</p>
-    </div>
-
     <div class="set-row set-row--toggle">
       <span class="set-label" style="margin:0">완주 알림 받기</span>
       <button class="toggle${notify ? " toggle--on" : ""}" data-action="toggle-dnd" role="switch" aria-checked="${notify}" aria-label="완주 알림 받기">
