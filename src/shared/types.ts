@@ -104,6 +104,16 @@ export interface PetUpdate {
 
 export type ThemeMode = "system" | "light" | "dark";
 
+/**
+ * 스캔 루트별 진단 — "폴더는 추가했는데 마커 0건"·"권한 거부"를 빈 화면과 구분해 보여주기 위함.
+ * status: ok=읽기 가능 / denied=TCC·권한 거부(읽기 막힘) / missing=폴더 없음.
+ */
+export interface RootDiagnostic {
+  root: string;
+  matchCount: number;
+  status: "ok" | "denied" | "missing";
+}
+
 export interface ConfigSnapshot {
   baseUrl: string;
   scanRoots: string[];
@@ -113,6 +123,8 @@ export interface ConfigSnapshot {
   theme: ThemeMode;
   /** 앱에서 숨긴 스킬(복원용). title 은 마커에서 알면 채워짐. */
   dismissed: { token: string; title: string }[];
+  /** scanRoots 별 마커 스캔 진단(매치수·접근성). 빈상태/설정에서 실패 가시화. */
+  scanDiagnostics: RootDiagnostic[];
   version: string;
 }
 

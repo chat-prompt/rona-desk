@@ -6,6 +6,7 @@ import type {
   PetUpdate,
   RonaProgress,
   RonaProgressStep,
+  RootDiagnostic,
   SkillEventType,
   SkillStatus,
   StepState,
@@ -251,12 +252,34 @@ function detailCard(s: SkillStatus): string {
   </div>`;
 }
 
-export function renderPanel(update: PetUpdate, selectedToken: string | null, pinned: boolean): string {
+/**
+ * 빈 상태 진단 한 줄 — "폴더는 추가했는데 0건/권한 거부" 를 "아무것도 안 추가함" 과 구분.
+ * scanRoots 가 아예 없으면(diagnostics 빈) 빈 문자열(기본 안내만).
+ */
+function emptyDiagnostic(diagnostics: RootDiagnostic[]): string {
+  if (diagnostics.length === 0) return "";
+  const denied = diagnostics.filter((d) => d.status === "denied").length;
+  const found = diagnostics.reduce((n, d) => n + d.matchCount, 0);
+  if (found > 0) return ""; // 발견은 했는데 표시 0건이면 다른 원인 — 오인 안내 회피
+  const n = diagnostics.length;
+  if (denied > 0) {
+    return `<p class="empty-diag">추가한 폴더 ${n}개 중 ${denied}개를 못 읽었어요(권한 거부). 시스템 설정 &gt; 개인정보 보호 및 보안에서 폴더 접근을 허용하거나, 권한이 필요 없는 다른 폴더를 고르세요.</p>`;
+  }
+  return `<p class="empty-diag">추가한 폴더 ${n}개에서 <code>.rona-skill.json</code> 을 못 찾았어요. 맞춤스킬을 설치한 그 작업 폴더가 맞는지 확인하세요.</p>`;
+}
+
+export function renderPanel(
+  update: PetUpdate,
+  selectedToken: string | null,
+  pinned: boolean,
+  diagnostics: RootDiagnostic[] = [],
+): string {
   const skills = update.all;
   if (skills.length === 0) {
     return `<div class="panel-card empty">
       ${panelHead(pinned)}
       <p class="empty-msg">아직 따라갈 스킬을 못 찾았어요. 스킬을 설치한 폴더를 알려주세요.</p>
+      ${emptyDiagnostic(diagnostics)}
       <div class="empty-actions">
         <button class="btn btn--primary" data-action="add-root">스킬 폴더 추가</button>
         <div class="token-row">

@@ -17,19 +17,22 @@ import {
 import path from "node:path";
 import { config } from "./config";
 import { Poller, type PollResult } from "./poller";
-import { scanMarkers, type DiscoveredSkill } from "./marker-scanner";
+import { scanMarkers, scanHomeRegistry, type DiscoveredSkill } from "./marker-scanner";
+import { watchHomeRegistry } from "./registry-watcher";
 import { buildUpdate } from "./derive";
 import { readLocalProgress } from "./progress-reader";
 import { isPositionVisible, type Rect } from "./window-position";
 import { initUpdater } from "./updater";
-import type { PetPhase, PetUpdate, SkillStatus, ThemeMode } from "../shared/types";
+import type { PetPhase, PetUpdate, RootDiagnostic, SkillStatus, ThemeMode } from "../shared/types";
 
 let tray: Tray | null = null;
 let petWindow: BrowserWindow | null = null;
 let poller: Poller | null = null;
+let unwatchRegistry: (() => void) | null = null;
 
 const skillMeta = new Map<string, DiscoveredSkill>();
 let scannedTokens: string[] = [];
+let scanDiagnostics: RootDiagnostic[] = [];
 let latestUpdate: PetUpdate | null = null;
 
 /** 드래그/리사이즈 후 저장 디바운스. */
@@ -235,10 +238,21 @@ function onPollResult(result: PollResult): void {
 
 // ── 마커 스캔 ────────────────────────────────────────────────
 async function rescan(): Promise<void> {
-  const found = await scanMarkers(config.scanRoots());
+  const scan = await scanMarkers(config.scanRoots());
+  scanDiagnostics = scan.diagnostics;
   skillMeta.clear();
-  for (const s of found) skillMeta.set(s.token, s);
-  scannedTokens = found.map((s) => s.token);
+
+  // 작업 폴더 마커가 baseline — markerPath 옆에 rona-progress.html 이 있어 단계 카드 렌더 가능.
+  for (const s of scan.skills) skillMeta.set(s.token, s);
+
+  // 홈 레지스트리(~/.rona/installed) 는 "작업 폴더에서 못 찾은 토큰" 만 메운다(set-if-absent).
+  // 같은 token 이면 작업 폴더 markerPath 를 유지해야 enrich() 가 옆 rona-progress.html 로
+  // 단계 카드를 그릴 수 있다 — 홈 레지스트리 경로엔 그 html 이 없다.
+  for (const s of await scanHomeRegistry()) {
+    if (!skillMeta.has(s.token)) skillMeta.set(s.token, s);
+  }
+
+  scannedTokens = [...skillMeta.keys()];
   poller?.refresh();
 }
 
@@ -270,6 +284,7 @@ function registerIpc(): void {
     windowPinned: config.windowPinned(),
     theme: config.theme(),
     dismissed: config.dismissedTokens().map((t) => ({ token: t, title: skillMeta.get(t)?.title ?? t })),
+    scanDiagnostics,
     version: app.getVersion(),
   }));
   ipcMain.handle("config:addScanRoot", () => addScanRoot());
@@ -335,11 +350,14 @@ app.whenReady().then(async () => {
   poller = new Poller(config.baseUrl, allTokens, onPollResult);
   await rescan();
   poller.start();
+  // 앱이 켜져 있는 동안 새 스킬이 설치되면(~/.rona/installed 변화) 자동 rescan — cold start 외 라이브 감지.
+  unwatchRegistry = watchHomeRegistry(() => void rescan());
 });
 
 // 종료 직전 디바운스 대기 중인 크기/위치를 동기 flush (electron-store 동기 write).
 // 리사이즈/이동 후 400ms 안에 종료하면 타이머가 못 터져 유실되던 것 방지.
 app.on("before-quit", () => {
+  unwatchRegistry?.();
   if (!petWindow || petWindow.isDestroyed()) return;
   if (moveSaveTimer) clearTimeout(moveSaveTimer);
   if (sizeSaveTimer) clearTimeout(sizeSaveTimer);
