@@ -9,7 +9,6 @@ import {
   BrowserWindow,
   nativeImage,
   ipcMain,
-  dialog,
   Notification,
   screen,
   nativeTheme,
@@ -17,13 +16,12 @@ import {
 import path from "node:path";
 import { config } from "./config";
 import { Poller, type PollResult } from "./poller";
-import { scanMarkers, scanHomeRegistry, type DiscoveredSkill } from "./marker-scanner";
+import { scanHomeRegistry, type DiscoveredSkill } from "./marker-scanner";
 import { watchHomeRegistry } from "./registry-watcher";
 import { buildUpdate } from "./derive";
-import { readLocalProgress } from "./progress-reader";
 import { isPositionVisible, type Rect } from "./window-position";
 import { initUpdater } from "./updater";
-import type { PetPhase, PetUpdate, RootDiagnostic, SkillStatus, ThemeMode } from "../shared/types";
+import type { PetPhase, PetUpdate, SkillStatus, ThemeMode } from "../shared/types";
 
 let tray: Tray | null = null;
 let petWindow: BrowserWindow | null = null;
@@ -32,7 +30,6 @@ let unwatchRegistry: (() => void) | null = null;
 
 const skillMeta = new Map<string, DiscoveredSkill>();
 let scannedTokens: string[] = [];
-let scanDiagnostics: RootDiagnostic[] = [];
 let latestUpdate: PetUpdate | null = null;
 
 /** 드래그/리사이즈 후 저장 디바운스. */
@@ -56,11 +53,10 @@ const ICON_DIR = path.join(__dirname, "..", "icons");
 
 function allTokens(): string[] {
   const dismissed = new Set(config.dismissedTokens());
-  return [...new Set([...scannedTokens, ...config.manualTokens()])].filter((t) => !dismissed.has(t));
+  return scannedTokens.filter((t) => !dismissed.has(t));
 }
 
-// 마커 제목 + 로컬 진행표(rona-progress.html)를 statuses 에 주입.
-// 제목: data 도착 전에도 리스트에 이름 표시. 로컬 진행표: 상세 뷰의 1순위 단계 서사.
+// 마커 제목을 statuses 에 주입 — data 도착 전에도 리스트에 이름 표시.
 function enrich(u: PetUpdate): PetUpdate {
   const decorate = (s: SkillStatus | null): SkillStatus | null => {
     if (!s) return s;
@@ -68,7 +64,6 @@ function enrich(u: PetUpdate): PetUpdate {
     return {
       ...s,
       title: s.data?.generation.title ?? meta?.title ?? s.title,
-      localProgress: meta ? readLocalProgress(meta.markerPath) : null,
     };
   };
   return { ...u, active: decorate(u.active), all: u.all.map((s) => decorate(s) as SkillStatus) };
@@ -83,7 +78,6 @@ function contextMenu(): Menu {
   return Menu.buildFromTemplate([
     { label: "Rona Desk — 학습 현황 동행", enabled: false },
     { type: "separator" },
-    { label: "스킬 폴더 추가…", click: () => void addScanRoot() },
     { label: "동기화 새로고침", click: () => void rescan() },
     {
       label: config.dndActive() ? "방해 금지 해제" : "방해 금지 (1시간)",
@@ -236,70 +230,24 @@ function onPollResult(result: PollResult): void {
   }
 }
 
-// ── 마커 스캔 ────────────────────────────────────────────────
+// ── 마커 스캔 (홈 레지스트리 단일 소스) ──────────────────────
 async function rescan(): Promise<void> {
-  const scan = await scanMarkers(config.scanRoots());
-  scanDiagnostics = scan.diagnostics;
   skillMeta.clear();
-
-  // 작업 폴더 마커가 baseline — markerPath 옆에 rona-progress.html 이 있어 단계 카드 렌더 가능.
-  for (const s of scan.skills) skillMeta.set(s.token, s);
-
-  // 홈 레지스트리(~/.rona/installed) 는 "작업 폴더에서 못 찾은 토큰" 만 메운다(set-if-absent).
-  // 같은 token 이면 작업 폴더 markerPath 를 유지해야 enrich() 가 옆 rona-progress.html 로
-  // 단계 카드를 그릴 수 있다 — 홈 레지스트리 경로엔 그 html 이 없다.
-  for (const s of await scanHomeRegistry()) {
-    if (!skillMeta.has(s.token)) skillMeta.set(s.token, s);
-  }
-
+  for (const s of await scanHomeRegistry()) skillMeta.set(s.token, s);
   scannedTokens = [...skillMeta.keys()];
   poller?.refresh();
-}
-
-async function addScanRoot(): Promise<void> {
-  // 메뉴바(LSUIElement) 앱이라 다이얼로그가 뒤에 숨지 않도록 먼저 앱을 활성화.
-  app.focus({ steal: true });
-  const properties: Array<"openDirectory" | "createDirectory"> = ["openDirectory", "createDirectory"];
-  const opts = {
-    title: "스킬을 설치하는 작업 폴더를 선택하세요",
-    message: "이 폴더 안의 .rona-skill.json 을 찾아 학습 현황을 추적합니다",
-    properties,
-  };
-  const r = petWindow
-    ? await dialog.showOpenDialog(petWindow, opts)
-    : await dialog.showOpenDialog(opts);
-  if (!r.canceled && r.filePaths[0]) {
-    config.addScanRoot(r.filePaths[0]);
-    await rescan();
-  }
 }
 
 // ── IPC ──────────────────────────────────────────────────────
 function registerIpc(): void {
   ipcMain.handle("config:get", () => ({
     baseUrl: config.baseUrl(),
-    scanRoots: config.scanRoots(),
-    manualTokens: config.manualTokens(),
     dnd: config.dndActive(),
     windowPinned: config.windowPinned(),
     theme: config.theme(),
     dismissed: config.dismissedTokens().map((t) => ({ token: t, title: skillMeta.get(t)?.title ?? t })),
-    scanDiagnostics,
     version: app.getVersion(),
   }));
-  ipcMain.handle("config:addScanRoot", () => addScanRoot());
-  ipcMain.handle("config:removeScanRoot", (_e, dir: string) => {
-    config.removeScanRoot(dir);
-    return rescan();
-  });
-  ipcMain.handle("config:addManualToken", (_e, token: string) => {
-    config.addManualToken(token.trim());
-    return rescan();
-  });
-  ipcMain.handle("config:removeManualToken", (_e, token: string) => {
-    config.removeManualToken(token);
-    return rescan();
-  });
   ipcMain.handle("config:setBaseUrl", (_e, url: string) => {
     config.setBaseUrl(url);
     poller?.refresh();

@@ -1,5 +1,6 @@
-// 설정 뷰 — 팝오버 내 토글(현황 ⇄ 설정). 스캔 폴더/수동 토큰 관리, 서버 주소, 알림, 버전.
-import type { ConfigSnapshot, RootDiagnostic } from "../../shared/types";
+// 설정 뷰 — 팝오버 내 토글(현황 ⇄ 설정). 숨긴 스킬 복원, 서버 주소, 알림, 테마, 버전.
+// 발견은 ~/.rona/installed 자동 — 폴더/토큰 수동 등록 UI 없음.
+import type { ConfigSnapshot } from "../../shared/types";
 import { GRIP } from "./panel";
 
 function escapeHtml(s: string): string {
@@ -9,42 +10,8 @@ function escapeHtml(s: string): string {
 }
 
 const BACK = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>`;
-const X = `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
-
-function removableRow(label: string, action: string, value: string): string {
-  return `<div class="set-row">
-    <span class="set-val" title="${escapeHtml(value)}">${escapeHtml(label)}</span>
-    <button class="iconbtn iconbtn--sm" data-action="${action}" data-value="${escapeHtml(value)}" aria-label="제거">${X}</button>
-  </div>`;
-}
-
-/** 스캔 루트 행 + 진단 배지("N개 발견"/"권한 거부"/"폴더 없음"). 진단 없으면 일반 행. */
-function rootRow(root: string, diag: RootDiagnostic | undefined): string {
-  let badge = "";
-  if (diag) {
-    if (diag.status === "denied") badge = `<span class="root-badge root-badge--warn">권한 거부</span>`;
-    else if (diag.status === "missing") badge = `<span class="root-badge root-badge--warn">폴더 없음</span>`;
-    else badge = `<span class="root-badge${diag.matchCount === 0 ? " root-badge--warn" : ""}">${diag.matchCount}개 발견</span>`;
-  }
-  return `<div class="set-row">
-    <span class="set-val" title="${escapeHtml(root)}">${escapeHtml(root)}</span>
-    ${badge}
-    <button class="iconbtn iconbtn--sm" data-action="remove-root" data-value="${escapeHtml(root)}" aria-label="제거">${X}</button>
-  </div>`;
-}
 
 export function renderSettings(c: ConfigSnapshot): string {
-  const diagByRoot = new Map((c.scanDiagnostics ?? []).map((d) => [d.root, d]));
-  const roots =
-    c.scanRoots.length === 0
-      ? `<p class="set-empty">추가된 폴더가 없어요.</p>`
-      : c.scanRoots.map((r) => rootRow(r, diagByRoot.get(r))).join("");
-
-  const tokens =
-    c.manualTokens.length === 0
-      ? `<p class="set-empty">없음 — 폴더 스캔으로 자동 발견돼요.</p>`
-      : c.manualTokens.map((t) => removableRow(t, "remove-token", t)).join("");
-
   const notify = !c.dnd; // dnd=true → 알림 끔. 토글 ON = 알림 받음.
 
   return `<div class="panel-card">
@@ -55,19 +22,7 @@ export function renderSettings(c: ConfigSnapshot): string {
     </div>
 
     <div class="set-sec">
-      <div class="set-label">스킬 폴더</div>
-      <p class="set-hint">이 폴더 안의 <code>.rona-skill.json</code> 을 찾아 추적해요.</p>
-      ${roots}
-      <button class="btn btn--sm" data-action="add-root">+ 폴더 추가</button>
-    </div>
-
-    <div class="set-sec">
-      <div class="set-label">수동 토큰</div>
-      ${tokens}
-      <div class="token-row">
-        <input id="set-token-input" class="token-input" placeholder="설치 토큰 직접 입력" />
-        <button class="btn btn--sm" data-action="add-token-set">추가</button>
-      </div>
+      <p class="set-hint">맞춤 스킬을 설치하면 학습 현황이 <strong>자동으로</strong> 나타나요. 따로 폴더나 토큰을 등록할 필요가 없어요.</p>
     </div>
 
     ${

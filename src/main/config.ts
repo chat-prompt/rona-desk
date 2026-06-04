@@ -4,11 +4,7 @@ import type { ThemeMode } from "../shared/types";
 
 interface ConfigShape {
   baseUrl: string;
-  /** 사용자가 지정한 스킬 설치 작업 폴더 루트(들). 마커 스캔 대상. */
-  scanRoots: string[];
-  /** 마커를 못 찾을 때 수동 입력한 install_token(들). (fallback) */
-  manualTokens: string[];
-  /** 앱에서 숨긴 스킬 token(들). 마커는 그대로 두고 추적/표시에서만 제외. */
+  /** 앱에서 숨긴 스킬 token(들). 추적/표시에서만 제외. */
   dismissedTokens: string[];
   /** DND 해제 시각(epoch ms). null=꺼짐. */
   dndUntil: number | null;
@@ -25,8 +21,6 @@ interface ConfigShape {
 const store = new Store<ConfigShape>({
   defaults: {
     baseUrl: "https://rona.so",
-    scanRoots: [],
-    manualTokens: [],
     dismissedTokens: [],
     dndUntil: null,
     windowPinned: false,
@@ -39,32 +33,6 @@ const store = new Store<ConfigShape>({
 export const config = {
   baseUrl: (): string => store.get("baseUrl"),
   setBaseUrl: (url: string): void => store.set("baseUrl", url.replace(/\/+$/, "")),
-
-  scanRoots: (): string[] => store.get("scanRoots"),
-  addScanRoot: (dir: string): void => {
-    const roots = new Set(store.get("scanRoots"));
-    roots.add(dir);
-    store.set("scanRoots", [...roots]);
-  },
-  removeScanRoot: (dir: string): void => {
-    store.set(
-      "scanRoots",
-      store.get("scanRoots").filter((d) => d !== dir),
-    );
-  },
-
-  manualTokens: (): string[] => store.get("manualTokens"),
-  addManualToken: (token: string): void => {
-    const t = new Set(store.get("manualTokens"));
-    t.add(token);
-    store.set("manualTokens", [...t]);
-  },
-  removeManualToken: (token: string): void => {
-    store.set(
-      "manualTokens",
-      store.get("manualTokens").filter((t) => t !== token),
-    );
-  },
 
   dismissedTokens: (): string[] => store.get("dismissedTokens"),
   addDismissedToken: (token: string): void => {
