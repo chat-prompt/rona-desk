@@ -1,7 +1,7 @@
 {
   "name": "rona-desk",
   "productName": "Rona Desk",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Rona 맞춤 스킬 학습 현황 데스크탑 앱",
   "main": "dist/main/index.js",
   "author": "Geniefy",

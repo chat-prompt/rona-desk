@@ -35,12 +35,12 @@ let sizeSaveTimer: NodeJS.Timeout | null = null;
 
 const DEFAULT_SIZE = { width: 380, height: 580 };
 const MIN_SIZE = { width: 320, height: 420 };
-const MAX_SIZE = { width: 640, height: 1000 };
 
+// 상한 없음 — 사용자가 화면 한도까지 자유롭게 키울 수 있다(하한만 유지).
 function clampSize(s: { width: number; height: number }): { width: number; height: number } {
   return {
-    width: Math.min(MAX_SIZE.width, Math.max(MIN_SIZE.width, Math.round(s.width))),
-    height: Math.min(MAX_SIZE.height, Math.max(MIN_SIZE.height, Math.round(s.height))),
+    width: Math.max(MIN_SIZE.width, Math.round(s.width)),
+    height: Math.max(MIN_SIZE.height, Math.round(s.height)),
   };
 }
 
@@ -79,8 +79,6 @@ function createWindow(): void {
     ...(useSaved ? { x: saved!.x, y: saved!.y } : {}),
     minWidth: MIN_SIZE.width,
     minHeight: MIN_SIZE.height,
-    maxWidth: MAX_SIZE.width,
-    maxHeight: MAX_SIZE.height,
     show: false,
     frame: false,
     transparent: true,
