@@ -96,19 +96,10 @@ const GEAR = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke
 // 드래그 손잡이(grip dots) — 제목 바가 잡아서 옮기는 곳임을 시각화.
 export const GRIP = `<svg class="grip" viewBox="0 0 8 14" width="8" height="14" aria-hidden="true"><circle cx="2" cy="2" r="1"/><circle cx="6" cy="2" r="1"/><circle cx="2" cy="7" r="1"/><circle cx="6" cy="7" r="1"/><circle cx="2" cy="12" r="1"/><circle cx="6" cy="12" r="1"/></svg>`;
 
-// 위치 고정(pin) 토글 — ON=map-pin 채움(코랄), OFF=윤곽선.
-function pinButton(on: boolean): string {
-  const svg = on
-    ? `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1.6c-2.4 0-4.3 1.9-4.3 4.3 0 3 4.3 7.6 4.3 7.6s4.3-4.6 4.3-7.6c0-2.4-1.9-4.3-4.3-4.3z" fill="currentColor"/><circle cx="8" cy="5.9" r="1.6" fill="var(--coral-tint)"/></svg>`
-    : `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 1.9c-2.2 0-4 1.8-4 4 0 2.9 4 7.2 4 7.2s4-4.3 4-7.2c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="5.9" r="1.5"/></svg>`;
-  return `<button class="iconbtn${on ? " iconbtn--on" : ""}" data-action="toggle-pin" aria-pressed="${on}" title="${on ? "위치 고정됨 — 클릭해 해제" : "위치 고정 — 이 자리에 머무름"}">${svg}</button>`;
-}
-
-function panelHead(pinned: boolean): string {
+function panelHead(): string {
   return `<div class="panel-head" title="여기를 잡고 옮기세요">
     ${GRIP}
     <span class="panel-title">Rona 학습 현황</span>
-    ${pinButton(pinned)}
     <button class="iconbtn" data-action="open-settings" aria-label="설정">${GEAR}</button>
   </div>`;
 }
@@ -155,11 +146,11 @@ function detailCard(s: SkillStatus): string {
   </div>`;
 }
 
-export function renderPanel(update: PetUpdate, selectedToken: string | null, pinned: boolean): string {
+export function renderPanel(update: PetUpdate, selectedToken: string | null): string {
   const skills = update.all;
   if (skills.length === 0) {
     return `<div class="panel-card empty">
-      ${panelHead(pinned)}
+      ${panelHead()}
       <p class="empty-msg">아직 따라갈 스킬이 없어요. 맞춤 스킬을 설치하면 여기에 자동으로 나타나요.</p>
     </div>`;
   }
@@ -168,7 +159,7 @@ export function renderPanel(update: PetUpdate, selectedToken: string | null, pin
   const list = skills.map((s) => skillRow(s, s.token === selected.token)).join("");
 
   return `<div class="panel-card">
-    ${panelHead(pinned)}
+    ${panelHead()}
     <div class="list-head">스킬 ${skills.length}개</div>
     <div class="skill-list">${list}</div>
     ${detailCard(selected)}

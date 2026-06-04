@@ -20,8 +20,7 @@ mac:
       arch: [arm64]
     - target: zip
       arch: [arm64]
-  extendInfo:
-    LSUIElement: 1 # 메뉴바 전용(Dock 미표시)
+  # Dock 정식 앱(LSUIElement 없음) — 실행 시 창이 떠서 상시 유지.
 # electron-updater + GitHub releases (clawd-on-desk 동형 실측)
 publish:
   provider: github

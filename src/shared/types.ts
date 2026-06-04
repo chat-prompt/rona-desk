@@ -89,7 +89,6 @@ export type ThemeMode = "system" | "light" | "dark";
 export interface ConfigSnapshot {
   baseUrl: string;
   dnd: boolean;
-  windowPinned: boolean;
   theme: ThemeMode;
   /** 앱에서 숨긴 스킬(복원용). title 은 마커에서 알면 채워짐. */
   dismissed: { token: string; title: string }[];
@@ -102,7 +101,6 @@ export interface RonaApi {
   getConfig(): Promise<ConfigSnapshot>;
   setBaseUrl(url: string): Promise<void>;
   setDnd(on: boolean): Promise<void>;
-  setWindowPinned(on: boolean): Promise<void>;
   setTheme(mode: ThemeMode): Promise<void>;
   dismissSkill(token: string): Promise<void>;
   restoreSkill(token: string): Promise<void>;

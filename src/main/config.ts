@@ -8,11 +8,9 @@ interface ConfigShape {
   dismissedTokens: string[];
   /** DND 해제 시각(epoch ms). null=꺼짐. */
   dndUntil: number | null;
-  /** 창 위치 고정(pin). true=트레이 스냅 안 하고 저장 좌표 유지. */
-  windowPinned: boolean;
-  /** pin 시 저장한 창 좌상단 좌표(DIP). null=없음. */
+  /** 마지막 창 좌상단 좌표(DIP). null=없음(중앙 배치). 화면 안일 때만 복원. */
   windowPosition: { x: number; y: number } | null;
-  /** 사용자가 조절한 창 크기(DIP). null=기본 크기. (pin 무관, 전역 선호) */
+  /** 사용자가 조절한 창 크기(DIP). null=기본 크기. */
   windowSize: { width: number; height: number } | null;
   /** 테마: system=OS 따름, light/dark=강제. */
   theme: ThemeMode;
@@ -23,7 +21,6 @@ const store = new Store<ConfigShape>({
     baseUrl: "https://rona.so",
     dismissedTokens: [],
     dndUntil: null,
-    windowPinned: false,
     windowPosition: null,
     windowSize: null,
     theme: "system",
@@ -53,8 +50,6 @@ export const config = {
   },
   setDnd: (until: number | null): void => store.set("dndUntil", until),
 
-  windowPinned: (): boolean => store.get("windowPinned"),
-  setWindowPinned: (on: boolean): void => store.set("windowPinned", on),
   windowPosition: (): { x: number; y: number } | null => store.get("windowPosition"),
   setWindowPosition: (pos: { x: number; y: number }): void => store.set("windowPosition", pos),
 

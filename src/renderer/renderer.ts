@@ -29,7 +29,7 @@ function paint(): void {
     return;
   }
   if (selectedToken && last && !last.all.some((s) => s.token === selectedToken)) selectedToken = null;
-  panelEl.innerHTML = last ? renderPanel(last, selectedToken, cfg?.windowPinned ?? false) : "";
+  panelEl.innerHTML = last ? renderPanel(last, selectedToken) : "";
 }
 
 function onPetUpdate(u: PetUpdate): void {
@@ -50,7 +50,7 @@ function closeSettings(): void {
 
 async function refreshConfig(): Promise<void> {
   cfg = await window.rona.getConfig();
-  paint(); // 진행 뷰 헤더의 pin 상태도 즉시 반영
+  paint(); // 설정 뷰를 보고 있으면 최신 스냅샷으로 갱신
 }
 
 /** 버튼을 즉시 로딩 상태로(스피너+비활성). 곧 도착할 재렌더가 통째 교체. */
@@ -90,11 +90,6 @@ panelEl.addEventListener("click", (e) => {
       void window.rona.setDnd(receivingNow).then(refreshConfig); // 받는 중→끔(dnd on)
       break;
     }
-    case "toggle-pin": {
-      // 헤더 아이콘·설정 토글 공용. 현재 cfg 상태 기준으로 반전.
-      void window.rona.setWindowPinned(!(cfg?.windowPinned ?? false)).then(refreshConfig);
-      break;
-    }
     case "set-theme": {
       const mode = act?.getAttribute("data-value") as ThemeMode | null;
       if (mode) void window.rona.setTheme(mode).then(refreshConfig);
@@ -128,7 +123,7 @@ panelEl.addEventListener("click", (e) => {
 
 window.rona.onPetUpdate(onPetUpdate);
 
-// 시작 시 설정을 받아 헤더 pin 상태를 반영.
+// 시작 시 설정 스냅샷을 미리 받아둔다(설정 뷰 첫 진입 지연 최소화).
 void window.rona.getConfig().then((c) => {
   cfg = c;
   paint();
