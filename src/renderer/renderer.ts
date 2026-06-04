@@ -29,7 +29,9 @@ function paint(): void {
     return;
   }
   if (selectedToken && last && !last.all.some((s) => s.token === selectedToken)) selectedToken = null;
-  panelEl.innerHTML = last ? renderPanel(last, selectedToken, cfg?.windowPinned ?? false) : "";
+  panelEl.innerHTML = last
+    ? renderPanel(last, selectedToken, cfg?.windowPinned ?? false, cfg?.scanDiagnostics ?? [])
+    : "";
 }
 
 function onPetUpdate(u: PetUpdate): void {

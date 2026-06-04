@@ -1,5 +1,5 @@
 // 설정 뷰 — 팝오버 내 토글(현황 ⇄ 설정). 스캔 폴더/수동 토큰 관리, 서버 주소, 알림, 버전.
-import type { ConfigSnapshot } from "../../shared/types";
+import type { ConfigSnapshot, RootDiagnostic } from "../../shared/types";
 import { GRIP } from "./panel";
 
 function escapeHtml(s: string): string {
@@ -18,11 +18,27 @@ function removableRow(label: string, action: string, value: string): string {
   </div>`;
 }
 
+/** 스캔 루트 행 + 진단 배지("N개 발견"/"권한 거부"/"폴더 없음"). 진단 없으면 일반 행. */
+function rootRow(root: string, diag: RootDiagnostic | undefined): string {
+  let badge = "";
+  if (diag) {
+    if (diag.status === "denied") badge = `<span class="root-badge root-badge--warn">권한 거부</span>`;
+    else if (diag.status === "missing") badge = `<span class="root-badge root-badge--warn">폴더 없음</span>`;
+    else badge = `<span class="root-badge${diag.matchCount === 0 ? " root-badge--warn" : ""}">${diag.matchCount}개 발견</span>`;
+  }
+  return `<div class="set-row">
+    <span class="set-val" title="${escapeHtml(root)}">${escapeHtml(root)}</span>
+    ${badge}
+    <button class="iconbtn iconbtn--sm" data-action="remove-root" data-value="${escapeHtml(root)}" aria-label="제거">${X}</button>
+  </div>`;
+}
+
 export function renderSettings(c: ConfigSnapshot): string {
+  const diagByRoot = new Map((c.scanDiagnostics ?? []).map((d) => [d.root, d]));
   const roots =
     c.scanRoots.length === 0
       ? `<p class="set-empty">추가된 폴더가 없어요.</p>`
-      : c.scanRoots.map((r) => removableRow(r, "remove-root", r)).join("");
+      : c.scanRoots.map((r) => rootRow(r, diagByRoot.get(r))).join("");
 
   const tokens =
     c.manualTokens.length === 0
