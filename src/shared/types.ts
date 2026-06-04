@@ -38,6 +38,8 @@ export interface ProgressData {
     totalEvents: number;
   };
   timeline: TimelineEntry[];
+  /** 서버가 작업 폴더 단계 서사를 집계해 보내는 스냅샷. 있으면 상세 뷰의 1순위(단계 카드). */
+  snapshot?: RonaProgress | null;
 }
 
 export interface TimelineEntry {
@@ -47,6 +49,22 @@ export interface TimelineEntry {
   tool_name?: string;
   step?: string | number;
   label?: string;
+}
+
+/** 작업 폴더 단계 서사의 한 단계 상태. 서버 8-event 와 별개. */
+export type StepState = "done" | "active" | "wait";
+
+export interface RonaProgressStep {
+  title: string;
+  state: StepState;
+  what?: string;
+  detail?: string;
+}
+
+export interface RonaProgress {
+  goal: { title?: string; oneLiner?: string; where?: string; what?: string; how?: string };
+  steps: RonaProgressStep[];
+  glossary: { term: string; desc: string }[];
 }
 
 /** 코코 성장 위상 = 진행도. */
