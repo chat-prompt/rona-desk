@@ -49,22 +49,6 @@ export interface TimelineEntry {
   label?: string;
 }
 
-/** 작업 폴더의 rona-progress.html(rona-progress-data JSON)이 담는 단계 서사. 서버 8-event 와 별개. */
-export type StepState = "done" | "active" | "wait";
-
-export interface RonaProgressStep {
-  title: string;
-  state: StepState;
-  what?: string;
-  detail?: string;
-}
-
-export interface RonaProgress {
-  goal: { title?: string; oneLiner?: string; where?: string; what?: string; how?: string };
-  steps: RonaProgressStep[];
-  glossary: { term: string; desc: string }[];
-}
-
 /** 코코 성장 위상 = 진행도. */
 export type PetPhase = "seed" | "sprout" | "bloom";
 
@@ -87,8 +71,6 @@ export interface SkillStatus {
   /** 마커에서 온 제목 (data 도착 전에도 리스트에 이름 표시용). */
   title?: string;
   data: ProgressData | null;
-  /** 작업 폴더의 rona-progress.html 에서 읽은 로컬 단계 서사 (있으면 상세 뷰의 1순위). */
-  localProgress?: RonaProgress | null;
   lastSyncedAt: number | null;
   offline: boolean;
 }
@@ -104,27 +86,13 @@ export interface PetUpdate {
 
 export type ThemeMode = "system" | "light" | "dark";
 
-/**
- * 스캔 루트별 진단 — "폴더는 추가했는데 마커 0건"·"권한 거부"를 빈 화면과 구분해 보여주기 위함.
- * status: ok=읽기 가능 / denied=TCC·권한 거부(읽기 막힘) / missing=폴더 없음.
- */
-export interface RootDiagnostic {
-  root: string;
-  matchCount: number;
-  status: "ok" | "denied" | "missing";
-}
-
 export interface ConfigSnapshot {
   baseUrl: string;
-  scanRoots: string[];
-  manualTokens: string[];
   dnd: boolean;
   windowPinned: boolean;
   theme: ThemeMode;
   /** 앱에서 숨긴 스킬(복원용). title 은 마커에서 알면 채워짐. */
   dismissed: { token: string; title: string }[];
-  /** scanRoots 별 마커 스캔 진단(매치수·접근성). 빈상태/설정에서 실패 가시화. */
-  scanDiagnostics: RootDiagnostic[];
   version: string;
 }
 
@@ -132,10 +100,6 @@ export interface ConfigSnapshot {
 export interface RonaApi {
   onPetUpdate(cb: (u: PetUpdate) => void): () => void;
   getConfig(): Promise<ConfigSnapshot>;
-  addScanRoot(): Promise<void>;
-  removeScanRoot(dir: string): Promise<void>;
-  addManualToken(token: string): Promise<void>;
-  removeManualToken(token: string): Promise<void>;
   setBaseUrl(url: string): Promise<void>;
   setDnd(on: boolean): Promise<void>;
   setWindowPinned(on: boolean): Promise<void>;

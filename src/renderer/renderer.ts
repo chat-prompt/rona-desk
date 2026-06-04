@@ -29,9 +29,7 @@ function paint(): void {
     return;
   }
   if (selectedToken && last && !last.all.some((s) => s.token === selectedToken)) selectedToken = null;
-  panelEl.innerHTML = last
-    ? renderPanel(last, selectedToken, cfg?.windowPinned ?? false, cfg?.scanDiagnostics ?? [])
-    : "";
+  panelEl.innerHTML = last ? renderPanel(last, selectedToken, cfg?.windowPinned ?? false) : "";
 }
 
 function onPetUpdate(u: PetUpdate): void {
@@ -87,15 +85,6 @@ panelEl.addEventListener("click", (e) => {
     case "rescan":
       void window.rona.rescan();
       break;
-    case "add-root":
-      void window.rona.addScanRoot().then(refreshConfig);
-      break;
-    case "remove-root":
-      void window.rona.removeScanRoot(value).then(refreshConfig);
-      break;
-    case "remove-token":
-      void window.rona.removeManualToken(value).then(refreshConfig);
-      break;
     case "toggle-dnd": {
       const receivingNow = act?.getAttribute("aria-checked") === "true";
       void window.rona.setDnd(receivingNow).then(refreshConfig); // 받는 중→끔(dnd on)
@@ -132,20 +121,6 @@ panelEl.addEventListener("click", (e) => {
       const input = document.getElementById("set-baseurl") as HTMLInputElement | null;
       const v = input?.value.trim();
       if (v) void window.rona.setBaseUrl(v).then(refreshConfig);
-      break;
-    }
-    case "add-token": {
-      // 진행 뷰 빈 상태의 토큰 추가
-      const input = document.getElementById("token-input") as HTMLInputElement | null;
-      const v = input?.value.trim();
-      if (v) void window.rona.addManualToken(v);
-      break;
-    }
-    case "add-token-set": {
-      // 설정 뷰의 토큰 추가
-      const input = document.getElementById("set-token-input") as HTMLInputElement | null;
-      const v = input?.value.trim();
-      if (v) void window.rona.addManualToken(v).then(refreshConfig);
       break;
     }
   }
