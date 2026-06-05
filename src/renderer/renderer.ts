@@ -20,6 +20,7 @@ let last: PetUpdate | null = null;
 let selectedToken: string | null = null;
 let view: "progress" | "settings" = "progress";
 let cfg: ConfigSnapshot | null = null;
+let skillMenuOpen = false; // 헤더 ▾ 스킬 전환 드롭다운 열림 여부
 
 function paint(): void {
   if (view === "settings") {
@@ -29,7 +30,7 @@ function paint(): void {
     return;
   }
   if (selectedToken && last && !last.all.some((s) => s.token === selectedToken)) selectedToken = null;
-  panelEl.innerHTML = last ? renderPanel(last, selectedToken) : "";
+  panelEl.innerHTML = last ? renderPanel(last, selectedToken, skillMenuOpen) : "";
 }
 
 function onPetUpdate(u: PetUpdate): void {
@@ -64,11 +65,12 @@ panelEl.addEventListener("click", (e) => {
   const act = target.closest("[data-action]");
   const action = act?.getAttribute("data-action");
 
-  // data-action 이 없으면 진행 뷰의 스킬 행 선택으로 처리.
+  // data-action 이 없으면 드롭다운 메뉴의 스킬 행 선택으로 처리(선택 후 메뉴 닫힘).
   if (!action) {
     const row = target.closest("[data-skill-token]");
     if (row) {
       selectedToken = row.getAttribute("data-skill-token");
+      skillMenuOpen = false;
       paint();
     }
     return;
@@ -76,6 +78,10 @@ panelEl.addEventListener("click", (e) => {
 
   const value = act?.getAttribute("data-value") ?? "";
   switch (action) {
+    case "toggle-skill-menu":
+      skillMenuOpen = !skillMenuOpen;
+      paint();
+      break;
     case "open-settings":
       void openSettings();
       break;
