@@ -130,23 +130,20 @@ function statusLine(s: SkillStatus, p: RonaProgress): string {
 }
 
 /**
- * 단계 3칸 창 — active 를 가운데 두고 앞뒤로. 글 폭탄 방지로 항상 ≤3개.
- * 보통: 직전1 + 현재 + 다음1 / 첫 단계: 현재 + 다음2 / 마지막: 직전2 + 현재("마지막!").
- * 전체 단계 수는 진행바·숫자(2/5)로 파악 — 여기선 위치만 보여준다.
+ * 단계 목록 — 완료(흐림 ✓) · 현재(코랄 카드) · 남은 단계 전부(흐림, "다음" 라벨 뒤). active 기준 역할 결정.
+ * 남은 스텝을 한눈에 보이도록 *전체* 순회한다(직전 3칸 창 폐기). 전체 진척은 진행바 숫자로도 표시.
+ * 긴 목록은 창 스크롤(.panel overflow-y)로 흡수.
  */
-function stepWindow(steps: RonaProgressStep[]): string {
+function stepList(steps: RonaProgressStep[]): string {
   if (steps.length === 0) return `<p class="tl-empty">아직 단계가 없어요.</p>`;
   let i = steps.findIndex((s) => s.state === "active");
   if (i < 0) i = steps.findIndex((s) => s.state !== "done");
   if (i < 0) i = steps.length - 1;
   const last = steps.length - 1;
-  const win = i === 0 ? [0, 1, 2] : i === last ? [i - 2, i - 1, i] : [i - 1, i, i + 1];
-  const idxs = win.filter((x) => x >= 0 && x <= last);
 
   let nextLabelDrawn = false;
-  return idxs
-    .map((idx) => {
-      const st = steps[idx];
+  return steps
+    .map((st, idx) => {
       if (idx === i) {
         const pill = idx === last ? "마지막!" : "진행 중";
         const tail = idx === last ? `<div class="current-sub">이것만 끝내면 완주예요</div>` : "";
@@ -173,13 +170,13 @@ function glossaryLines(p: RonaProgress): string {
   return `<div class="gloss"><div class="gloss-h">🤖 AI 용어 check!</div>${items}</div>`;
 }
 
-/** 서버 스냅샷 기반 진행 상세 — 서브카피 + 상태 + 진행바 + 3칸 단계 + 용어(도구 톤). */
+/** 서버 스냅샷 기반 진행 상세 — 서브카피 + 상태 + 진행바 + 단계 목록(현재+남은 전체) + 용어(도구 톤). */
 function progressDetail(s: SkillStatus, p: RonaProgress): string {
   return `<div class="detail">
     ${p.goal.oneLiner ? `<div class="subcopy">${escapeHtml(p.goal.oneLiner)}</div>` : ""}
     ${statusLine(s, p)}
     ${progressBar(p)}
-    <div class="steps">${stepWindow(p.steps)}</div>
+    <div class="steps">${stepList(p.steps)}</div>
     ${glossaryLines(p)}
     ${detailActions(s.token)}
   </div>`;
