@@ -62,7 +62,6 @@
       .panel-head:hover .grip, .set-head:hover .grip { opacity: 0.85; }
       /* 헤더 — 핑크 배경박스 없는 플랫 톤(도구). 코랄 점 로고 + 제목 + 톱니. */
       .panel-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
-      .panel-title { flex: 1; font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .dot-logo { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); flex: none; }
       .hd-title { flex: 1; font-size: 13.5px; font-weight: 650; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       /* 펄스 점 — 도구가 일하는 중(생동감). 막힘 판단 아님. */
@@ -98,7 +97,6 @@
       /* 서브카피 — 실습명 밑 한 줄. 로고 점 들여쓰기(18px) 정렬. */
       .subcopy { font-size: 11.5px; color: var(--ink2); line-height: 1.5; margin: 0 0 14px; padding-left: 18px; }
       /* 선택 실습 제목(여러 실습일 때만) */
-      .detail-titled { display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line2); margin-top: 12px; padding-top: 14px; margin-bottom: 12px; }
       /* 상태 — 펄스 점 + 사실 문구(판단 아님) */
       .status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--coral-ink); font-weight: 550; margin-bottom: 12px; }
       .status--idle { color: var(--ink3); }
@@ -179,24 +177,27 @@
         flex: 1; padding: 7px 9px; border-radius: 9px;
         border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 12px;
       }
-      .list-head { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-      .skill-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-      .skill-row {
-        display: flex; align-items: center; gap: 8px; width: 100%;
-        padding: 7px 9px; border-radius: 10px; border: 1px solid transparent;
-        background: transparent; color: var(--text); font-size: 12.5px; cursor: pointer; text-align: left;
-        font-family: inherit;
+      /* ── 스킬 전환 드롭다운 (헤더 ▾) — 선택 1개만 보이고 여기서 전환 ── */
+      .hd-switch { -webkit-app-region: no-drag; flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 5px; padding: 0; border: none; background: transparent; cursor: pointer; font-family: inherit; }
+      .hd-switch .hd-title { flex: 0 1 auto; }
+      .caret { flex: 0 0 auto; color: var(--ink3); transition: transform 0.15s ease; }
+      .hd-switch[aria-expanded="true"] .caret { transform: rotate(180deg); }
+      .ddmenu { margin: 2px 0 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(20, 20, 30, 0.12); }
+      .ddrow {
+        display: flex; align-items: center; gap: 9px; width: 100%;
+        padding: 10px 12px; border: none; background: var(--card-bg);
+        color: var(--text); font-size: 12.5px; cursor: pointer; text-align: left; font-family: inherit;
       }
-      .skill-row:hover { background: var(--coral-tint); }
-      .skill-row--sel { border-color: var(--coral); background: var(--coral-tint); }
+      .ddrow + .ddrow { border-top: 1px solid var(--line2); }
+      .ddrow:hover { background: var(--coral-tint); }
+      .ddrow--sel { background: var(--coral-soft); }
+      .ddrow-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .ddrow-mini { flex: 0 0 auto; color: var(--ink3); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
       .phase-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
       .phase-seed { background: var(--border); }
       .phase-sprout { background: var(--leaf); }
       .phase-bloom { background: var(--coral); }
-      .skill-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .skill-mini { color: var(--muted); font-size: 11px; white-space: nowrap; }
       .detail { padding-top: 2px; }
-      .list-foot { margin-top: 10px; text-align: center; }
       .btn--sm { flex: none; padding: 5px 10px; font-size: 11px; color: var(--muted); }
 
       /* ── 설정 뷰 ── */

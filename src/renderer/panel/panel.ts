@@ -57,12 +57,13 @@ function miniStatus(s: SkillStatus): string {
   return s.data.progress.totalEvents === 0 ? "대기" : `${cp}단계`;
 }
 
-function skillRow(s: SkillStatus, selected: boolean): string {
+/** 드롭다운 전환 메뉴의 한 행 — 진행 위상 점 + 이름 + 미니 상태. 누르면 그 스킬 선택. */
+function skillMenuRow(s: SkillStatus, selected: boolean): string {
   const phase: PetPhase = derivePhase(s.data ?? null);
-  return `<button class="skill-row${selected ? " skill-row--sel" : ""}" data-skill-token="${s.token}">
+  return `<button class="ddrow${selected ? " ddrow--sel" : ""}" data-skill-token="${s.token}" role="option" aria-selected="${selected}">
     <span class="phase-dot phase-${phase}" aria-hidden="true"></span>
-    <span class="skill-name">${escapeHtml(skillTitle(s))}</span>
-    <span class="skill-mini">${miniStatus(s)}</span>
+    <span class="ddrow-name">${escapeHtml(skillTitle(s))}</span>
+    <span class="ddrow-mini">${miniStatus(s)}</span>
   </button>`;
 }
 
@@ -97,13 +98,8 @@ const GEAR = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke
 // 드래그 손잡이(grip dots) — 제목 바가 잡아서 옮기는 곳임을 시각화.
 export const GRIP = `<svg class="grip" viewBox="0 0 8 14" width="8" height="14" aria-hidden="true"><circle cx="2" cy="2" r="1"/><circle cx="6" cy="2" r="1"/><circle cx="2" cy="7" r="1"/><circle cx="6" cy="7" r="1"/><circle cx="2" cy="12" r="1"/><circle cx="6" cy="12" r="1"/></svg>`;
 
-function panelHead(): string {
-  return `<div class="panel-head" title="여기를 잡고 옮기세요">
-    ${GRIP}
-    <span class="panel-title">Rona 학습 현황</span>
-    <button class="iconbtn" data-action="open-settings" aria-label="설정">${GEAR}</button>
-  </div>`;
-}
+// 드롭다운 캐럿(▾) — 스킬이 여럿일 때 헤더 제목 옆에서 전환 메뉴를 연다.
+const CARET = `<svg class="caret" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>`;
 
 /** 상세 하단 액션 — 새로고침 + 목록에서 제거(앱에서 숨김, 복원 가능). */
 function detailActions(token: string): string {
@@ -217,20 +213,32 @@ function detailBody(s: SkillStatus): string {
 // 헤더 로고 — 핑크 배경박스 대신 작은 코랄 점(도구 톤).
 const DOT_LOGO = `<span class="dot-logo" aria-hidden="true"></span>`;
 
-/** 실습 1개 / 빈 상태용 헤더 — 코랄 점 + 제목 + 톱니. (제목 바가 창 드래그 핸들) */
-function bareHead(title: string): string {
-  return `<div class="panel-head panel-head--bare" title="여기를 잡고 옮기세요">
+/**
+ * 카드 헤더 — 코랄 점 + 제목 + (전환 가능하면 ▾) + 톱니. 제목 바가 창 드래그 핸들.
+ * switchable=true 면 제목+캐럿이 드롭다운 토글 버튼(스킬 여럿일 때).
+ */
+function cardHead(title: string, opts: { switchable?: boolean; open?: boolean } = {}): string {
+  const titleEl = opts.switchable
+    ? `<button class="hd-switch" data-action="toggle-skill-menu" aria-haspopup="listbox" aria-expanded="${opts.open ? "true" : "false"}"><span class="hd-title">${escapeHtml(title)}</span>${CARET}</button>`
+    : `<span class="hd-title">${escapeHtml(title)}</span>`;
+  return `<div class="panel-head" title="여기를 잡고 옮기세요">
     ${GRIP}
     ${DOT_LOGO}
-    <span class="hd-title">${escapeHtml(title)}</span>
+    ${titleEl}
     <button class="iconbtn" data-action="open-settings" aria-label="설정">${GEAR}</button>
   </div>`;
+}
+
+/** 스킬 전환 드롭다운 메뉴 — 열렸을 때만 렌더. 각 행 클릭 시 그 스킬로 전환(+메뉴 닫힘). */
+function skillMenu(skills: SkillStatus[], selectedToken: string): string {
+  const rows = skills.map((s) => skillMenuRow(s, s.token === selectedToken)).join("");
+  return `<div class="ddmenu" role="listbox">${rows}</div>`;
 }
 
 /** 빈 상태 — 궤도 오브 + 자동 대기 안내(큰 수동 버튼 없음). 폴백은 설정 링크. */
 function emptyCard(): string {
   return `<div class="panel-card empty">
-    ${bareHead("Rona")}
+    ${cardHead("Rona")}
     <div class="stage"><div class="orb"><div class="orb-ring"></div><div class="orb-orbit"></div><div class="orb-core"></div></div></div>
     <div class="eh">AI로 오늘의 업무를<br>해결해볼까요?</div>
     <div class="esub">터미널에서 Rona 실습을 시작하면<br>이 창에 자동으로 나타나요</div>
@@ -239,27 +247,20 @@ function emptyCard(): string {
   </div>`;
 }
 
-export function renderPanel(update: PetUpdate, selectedToken: string | null): string {
+/**
+ * 선택된 *1개* 실습만 카드로 보여준다. 여럿이면 헤더 제목을 ▾ 드롭다운으로 전환
+ * (리스트 나열 안 함). menuOpen 이면 헤더 아래 전환 메뉴를 펼친다.
+ */
+export function renderPanel(update: PetUpdate, selectedToken: string | null, menuOpen = false): string {
   const skills = update.all;
   if (skills.length === 0) return emptyCard();
 
   const selected = skills.find((s) => s.token === selectedToken) ?? update.active ?? skills[0];
+  const multi = skills.length > 1;
 
-  // 실습 1개 → 리스트 숨김(개념적 1:1). 헤더에 실습명 직접.
-  if (skills.length === 1) {
-    return `<div class="panel-card">
-      ${bareHead(skillTitle(selected))}
-      ${detailBody(selected)}
-    </div>`;
-  }
-
-  // 여럿 → "Rona 학습 현황" 헤더 + 전환 리스트 + 선택 실습 상세.
-  const list = skills.map((s) => skillRow(s, s.token === selected.token)).join("");
   return `<div class="panel-card">
-    ${panelHead()}
-    <div class="list-head">스킬 ${skills.length}개</div>
-    <div class="skill-list">${list}</div>
-    <div class="detail-titled">${DOT_LOGO}<span class="hd-title">${escapeHtml(skillTitle(selected))}</span></div>
+    ${cardHead(skillTitle(selected), { switchable: multi, open: menuOpen })}
+    ${multi && menuOpen ? skillMenu(skills, selected.token) : ""}
     ${detailBody(selected)}
   </div>`;
 }
