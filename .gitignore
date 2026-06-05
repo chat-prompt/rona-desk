@@ -15,3 +15,6 @@ scripts/screenshot-demo.mjs
 scripts/live-capture.mjs
 scripts/gallery-capture.mjs
 scripts/verify-scan.mts
+
+# superpowers brainstorm 임시 목업/세션
+.superpowers/
