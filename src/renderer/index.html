@@ -9,23 +9,33 @@
     <title>Rona Desk</title>
     <style>
       :root {
-        --coral: #f2645c;
+        --coral: #f0635a;
         --coral-dark: #c7463f;
         --coral-tint: #fdecea;
+        --coral-soft: #fdeeec; /* 현재 단계 카드 배경(연코랄) */
+        --coral-ink: #c2473f;  /* 코랄 위 진한 글자/상태 텍스트 */
         --leaf: #7ab26e;
         --text: #2b2b2f;
         --muted: #8a8a92;
+        --ink2: #6b6b72; /* 보조 본문(서브카피·용어) */
+        --ink3: #9c9ca3; /* 흐린 메타(대기 점·다음 라벨·숫자) */
         --card-bg: #ffffff;
         --border: #ececf0;
+        --line2: #f5f5f7; /* 더 옅은 구분선(용어 위) */
         --bubble-bg: rgba(255, 255, 255, 0.97);
       }
       @media (prefers-color-scheme: dark) {
         :root {
           --coral-tint: #3a2422;
+          --coral-soft: #3a2422;
+          --coral-ink: #f0938c;
           --text: #f3f3f5;
           --muted: #9a9aa2;
+          --ink2: #b8b8c0;
+          --ink3: #8a8a92;
           --card-bg: #26262b;
           --border: #34343a;
+          --line2: #2e2e34;
           --bubble-bg: rgba(40, 40, 46, 0.97);
         }
       }
@@ -50,8 +60,16 @@
       /* 드래그 손잡이 점 — 제목 바가 잡는 곳임을 표시. */
       .grip { flex: 0 0 auto; fill: var(--coral); opacity: 0.55; }
       .panel-head:hover .grip, .set-head:hover .grip { opacity: 0.85; }
-      .panel-head { display: flex; align-items: center; gap: 8px; margin: -4px -6px 10px; padding: 6px 8px; border-radius: 9px; background: var(--coral-tint); }
-      .panel-title { flex: 1; font-weight: 700; font-size: 13px; }
+      /* 헤더 — 핑크 배경박스 없는 플랫 톤(도구). 코랄 점 로고 + 제목 + 톱니. */
+      .panel-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+      .panel-title { flex: 1; font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dot-logo { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); flex: none; }
+      .hd-title { flex: 1; font-size: 13.5px; font-weight: 650; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      /* 펄스 점 — 도구가 일하는 중(생동감). 막힘 판단 아님. */
+      .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); position: relative; flex: none; }
+      .pulse::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--coral); animation: pr 1.8s infinite; }
+      @keyframes pr { 0% { transform: scale(1); opacity: 0.5; } 70% { transform: scale(3); opacity: 0; } 100% { opacity: 0; } }
+      .dot-idle { width: 6px; height: 6px; border-radius: 50%; background: var(--ink3); flex: none; }
       .iconbtn {
         flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
         width: 26px; height: 26px; padding: 0; border-radius: 8px;
@@ -66,25 +84,6 @@
         padding: 14px;
         box-shadow: 0 6px 22px rgba(0, 0, 0, 0.12);
       }
-      .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-      .card-title { font-weight: 700; font-size: 14px; line-height: 1.3; }
-      .card-status { color: var(--coral); font-size: 12px; white-space: nowrap; }
-      .card-task {
-        margin: 6px 0 10px;
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.4;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-      .badge-row { display: flex; gap: 6px; align-items: center; min-height: 22px; }
-      .badge--done {
-        display: inline-flex; align-items: center; gap: 4px;
-        background: var(--coral); color: #fff;
-        border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600;
-      }
       .chip {
         background: var(--coral-tint); color: var(--coral-dark);
         border-radius: 999px; padding: 3px 9px; font-size: 11px;
@@ -95,49 +94,56 @@
       .tl-empty { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
       .timeline { list-style: none; margin: 6px 0 0; padding: 0; }
 
-      /* ── 서버 스냅샷 단계 상세(진행표 동형) ── */
-      .goal-head { margin-bottom: 10px; }
-      .goal-one { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-      .meter { margin: 4px 0 12px; }
-      .meter-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
-      .meter-label { font-size: 11px; color: var(--muted); }
-      .meter-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-      .meter-count b { color: var(--coral); }
-      .meter-track { height: 7px; border-radius: 999px; background: var(--border); overflow: hidden; }
-      .meter-fill { height: 100%; border-radius: 999px; background: var(--coral); transition: width 0.3s cubic-bezier(0, 0, 0.2, 1); }
-      .way { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
-      .way-item { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: start; }
-      .way-k { font-size: 11px; font-weight: 600; color: var(--muted); padding-top: 1px; }
-      .way-v { font-size: 12.5px; color: var(--text); line-height: 1.45; }
-      .steps { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 0; }
-      .step { border: 1px solid var(--border); border-radius: 12px; padding: 10px 11px; }
-      .step--active { border-color: var(--coral); background: var(--coral-tint); }
-      .step--done { background: transparent; }
-      .step-top { display: flex; align-items: center; gap: 8px; }
-      .step-n {
-        flex: 0 0 auto; width: 20px; height: 20px; border-radius: 999px;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
-        background: var(--coral-tint); color: var(--coral-dark); border: 1px solid var(--border);
-      }
-      .step--done .step-n { background: var(--coral); color: #fff; border-color: transparent; }
-      .step--active .step-n { background: var(--card-bg); color: var(--coral-dark); border-color: var(--coral); }
-      .step-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
-      .step--done .step-title { color: var(--muted); }
-      .step-pill {
-        flex: 0 0 auto; font-size: 11px; font-weight: 600; line-height: 1;
-        padding: 4px 9px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
-      }
-      .step-pill--done { background: var(--coral); color: #fff; }
-      .step-pill--active { background: transparent; color: var(--coral); border-color: var(--coral); }
-      .step-pill--wait { background: var(--card-bg); color: var(--muted); border-color: var(--border); }
-      .step-row { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: start; margin-top: 6px; }
-      .step-k { font-size: 11px; font-weight: 600; color: var(--muted); padding-top: 1px; }
-      .step-v { font-size: 12.5px; color: var(--text); line-height: 1.45; }
-      .gloss { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
-      .gloss-item { display: flex; flex-direction: column; gap: 1px; }
-      .gloss-term { font-size: 12px; font-weight: 600; color: var(--text); }
-      .gloss-desc { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+      /* ── 진행 상세(서버 스냅샷, AI 업무 도구 톤) ── */
+      /* 서브카피 — 실습명 밑 한 줄. 로고 점 들여쓰기(18px) 정렬. */
+      .subcopy { font-size: 11.5px; color: var(--ink2); line-height: 1.5; margin: 0 0 14px; padding-left: 18px; }
+      /* 선택 실습 제목(여러 실습일 때만) */
+      .detail-titled { display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line2); margin-top: 12px; padding-top: 14px; margin-bottom: 12px; }
+      /* 상태 — 펄스 점 + 사실 문구(판단 아님) */
+      .status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--coral-ink); font-weight: 550; margin-bottom: 12px; }
+      .status--idle { color: var(--ink3); }
+      /* 그라데이션 진행바 + 라벨 없는 숫자 */
+      .bar { height: 6px; border-radius: 99px; background: var(--border); overflow: hidden; }
+      .bar-f { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #ffb07a, #f0635a); transition: width 0.3s cubic-bezier(0, 0, 0.2, 1); }
+      .bar-meta { display: flex; justify-content: flex-end; margin-top: 7px; font-size: 11px; color: var(--ink3); font-variant-numeric: tabular-nums; }
+      .bar-meta b { color: var(--text); font-weight: 650; }
+      /* 3칸 단계 — 직전(흐림) · 현재(코랄) · 다음(흐림). 위계로 시선을 "지금"에. */
+      .steps { margin-top: 18px; display: flex; flex-direction: column; gap: 2px; }
+      .nextlabel { font-size: 10px; color: var(--ink3); font-weight: 600; letter-spacing: 0.04em; margin: 8px 0 2px 2px; text-transform: uppercase; }
+      .srow { display: flex; align-items: center; gap: 11px; padding: 9px 2px; }
+      .smark { width: 18px; height: 18px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .srow.done { opacity: 0.42; } /* 완료 흐림 */
+      .srow.done .smark { background: var(--coral); color: #fff; }
+      .srow.done .stext { color: var(--ink3); }
+      .srow.next { opacity: 0.6; } /* 다음 흐림 */
+      .srow.next .smark { background: var(--line2); color: var(--ink3); border: 1px solid var(--border); }
+      .srow.next .stext { color: var(--ink2); }
+      .stext { flex: 1; font-size: 13px; }
+      .current { margin-top: 6px; background: var(--coral-soft); border: 1px solid rgba(240, 99, 90, 0.28); border-radius: 12px; padding: 12px 13px; }
+      .current-top { display: flex; align-items: center; gap: 10px; }
+      .current .smark { width: 19px; height: 19px; background: var(--card-bg); color: var(--coral-ink); border: 1.5px solid var(--coral); }
+      .current-t { flex: 1; font-size: 13.5px; font-weight: 650; }
+      .current-pill { flex: none; font-size: 10.5px; font-weight: 600; color: var(--coral-ink); background: var(--card-bg); border: 1px solid rgba(240, 99, 90, 0.32); border-radius: 99px; padding: 3px 9px; white-space: nowrap; }
+      .current-sub { margin-top: 8px; font-size: 11.5px; color: var(--coral-ink); opacity: 0.85; }
+      /* 용어 — 한 줄 압축("용어 — 뜻"), 항상 펼침 */
+      .gloss { margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--line2); }
+      .gloss-h { font-size: 11.5px; font-weight: 650; color: var(--ink2); margin-bottom: 9px; }
+      .g1 { font-size: 12px; line-height: 1.5; margin-bottom: 5px; color: var(--ink2); }
+      .g1 b { color: var(--text); font-weight: 600; }
+
+      /* ── 빈 상태 — 궤도 오브 + 자동 대기(마스코트 없음) ── */
+      .stage { height: 78px; display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; }
+      .orb { width: 46px; height: 46px; position: relative; }
+      .orb-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(240, 99, 90, 0.4); }
+      .orb-orbit { position: absolute; inset: 0; animation: spin 4s linear infinite; }
+      .orb-orbit::before { content: ""; position: absolute; top: -2.5px; left: 50%; margin-left: -2.5px; width: 5px; height: 5px; border-radius: 50%; background: var(--coral); }
+      .orb-core { position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; margin: -3.5px; border-radius: 50%; background: var(--coral); }
+      .eh { font-size: 16px; font-weight: 650; line-height: 1.5; text-align: center; letter-spacing: -0.01em; }
+      .esub { font-size: 12px; color: var(--ink2); margin: 10px 0 0; line-height: 1.6; text-align: center; }
+      .ewrap { text-align: center; }
+      .ewait { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--ink3); margin-top: 20px; }
+      .emanual { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line2); font-size: 11.5px; color: var(--ink3); text-align: center; }
+      .emanual a { color: var(--coral-ink); font-weight: 600; text-decoration: none; cursor: pointer; }
 
       .tl-item { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 3px 0; font-size: 12px; }
       .tl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
@@ -161,8 +167,11 @@
         animation: spin 0.6s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.4s; } }
-      .synced { margin-top: 8px; text-align: center; color: var(--muted); font-size: 10px; }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner { animation-duration: 1.4s; }
+        .orb-orbit { animation: none; }
+        .pulse::after { animation: none; opacity: 0.25; }
+      }
       .empty { text-align: center; }
       .empty-msg { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; }
       .token-row { display: flex; gap: 6px; }
@@ -186,7 +195,7 @@
       .phase-bloom { background: var(--coral); }
       .skill-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .skill-mini { color: var(--muted); font-size: 11px; white-space: nowrap; }
-      .detail { border-top: 1px solid var(--border); padding-top: 10px; }
+      .detail { padding-top: 2px; }
       .list-foot { margin-top: 10px; text-align: center; }
       .btn--sm { flex: none; padding: 5px 10px; font-size: 11px; color: var(--muted); }
 
