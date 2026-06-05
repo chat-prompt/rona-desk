@@ -8,7 +8,6 @@ import type {
   RonaProgressStep,
   SkillEventType,
   SkillStatus,
-  StepState,
   TimelineEntry,
 } from "../../shared/types";
 import { derivePhase } from "../../main/derive";
@@ -45,10 +44,6 @@ function skillTitle(s: SkillStatus): string {
   return s.data?.generation.title ?? s.title ?? "rona-skill";
 }
 
-function stepStateLabel(state: StepState): string {
-  return state === "done" ? "완료" : state === "active" ? "진행 중" : "대기";
-}
-
 function stepCounts(p: RonaProgress): { done: number; total: number } {
   return { done: p.steps.filter((s) => s.state === "done").length, total: p.steps.length };
 }
@@ -69,13 +64,6 @@ function skillRow(s: SkillStatus, selected: boolean): string {
     <span class="skill-name">${escapeHtml(skillTitle(s))}</span>
     <span class="skill-mini">${miniStatus(s)}</span>
   </button>`;
-}
-
-function completionBadge(completed: boolean): string {
-  if (!completed) return "";
-  return `<span class="badge badge--done">
-    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    완주</span>`;
 }
 
 /** 진행 내역 섹션 — 이벤트가 없으면 빈 상태 안내를 보여준다(통째 생략 금지). */
@@ -125,122 +113,156 @@ function detailActions(token: string): string {
   </div>`;
 }
 
-function progressMeter(p: RonaProgress): string {
+/** 그라데이션 진행바 + "done / total 완료"(라벨 없이 숫자). 진행도는 done 개수 기준. */
+function progressBar(p: RonaProgress): string {
   const { done, total } = stepCounts(p);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-  return `<div class="meter">
-    <div class="meter-head"><span class="meter-label">전체 진행도</span><span class="meter-count"><b>${done}</b> / ${total} 단계</span></div>
-    <div class="meter-track"><div class="meter-fill" style="width:${pct}%"></div></div>
-  </div>`;
+  return `<div class="bar"><div class="bar-f" style="width:${pct}%"></div></div>
+    <div class="bar-meta"><b>${done}</b>&nbsp;/ ${total} 완료</div>`;
 }
 
-function wayBlock(p: RonaProgress): string {
-  const rows: Array<[string, string | undefined]> = [
-    ["어디까지", p.goal.where],
-    ["무엇을", p.goal.what],
-    ["어떻게", p.goal.how],
-  ];
-  const items = rows
-    .filter(([, v]) => v)
-    .map(([k, v]) => `<div class="way-item"><span class="way-k">${k}</span><span class="way-v">${escapeHtml(String(v))}</span></div>`)
+/** 진행 상태 한 줄 — 판단 아닌 관찰(도구 톤). 막혀도 거짓이 안 되는 사실만. */
+function statusLine(s: SkillStatus, p: RonaProgress): string {
+  const allDone = p.steps.length > 0 && stepCounts(p).done >= p.steps.length;
+  if (allDone) return `<div class="status status--done">완주했어요</div>`;
+  if (s.offline) return `<div class="status status--idle"><span class="dot-idle" aria-hidden="true"></span>잠깐 쉬는 중</div>`;
+  return `<div class="status"><span class="pulse" aria-hidden="true"></span>실습 진행 중</div>`;
+}
+
+/**
+ * 단계 3칸 창 — active 를 가운데 두고 앞뒤로. 글 폭탄 방지로 항상 ≤3개.
+ * 보통: 직전1 + 현재 + 다음1 / 첫 단계: 현재 + 다음2 / 마지막: 직전2 + 현재("마지막!").
+ * 전체 단계 수는 진행바·숫자(2/5)로 파악 — 여기선 위치만 보여준다.
+ */
+function stepWindow(steps: RonaProgressStep[]): string {
+  if (steps.length === 0) return `<p class="tl-empty">아직 단계가 없어요.</p>`;
+  let i = steps.findIndex((s) => s.state === "active");
+  if (i < 0) i = steps.findIndex((s) => s.state !== "done");
+  if (i < 0) i = steps.length - 1;
+  const last = steps.length - 1;
+  const win = i === 0 ? [0, 1, 2] : i === last ? [i - 2, i - 1, i] : [i - 1, i, i + 1];
+  const idxs = win.filter((x) => x >= 0 && x <= last);
+
+  let nextLabelDrawn = false;
+  return idxs
+    .map((idx) => {
+      const st = steps[idx];
+      if (idx === i) {
+        const pill = idx === last ? "마지막!" : "진행 중";
+        const tail = idx === last ? `<div class="current-sub">이것만 끝내면 완주예요</div>` : "";
+        return `<div class="current"><div class="current-top">
+          <span class="smark">${idx + 1}</span>
+          <span class="current-t">${escapeHtml(st.title)}</span>
+          <span class="current-pill">${pill}</span>
+        </div>${tail}</div>`;
+      }
+      const upcoming = idx > i;
+      const label = !nextLabelDrawn && upcoming ? ((nextLabelDrawn = true), `<div class="nextlabel">다음</div>`) : "";
+      const mark = upcoming ? String(idx + 1) : TICK;
+      return `${label}<div class="srow ${upcoming ? "next" : "done"}"><span class="smark">${mark}</span><span class="stext">${escapeHtml(st.title)}</span></div>`;
+    })
     .join("");
-  return items ? `<div class="way">${items}</div>` : "";
 }
 
-function stepCard(st: RonaProgressStep, idx: number): string {
-  const marker = st.state === "done" ? TICK : String(idx + 1);
-  const detailKey = st.state === "done" ? "결과" : "다음 액션";
-  return `<div class="step step--${st.state}">
-    <div class="step-top">
-      <span class="step-n">${marker}</span>
-      <span class="step-title">${escapeHtml(st.title)}</span>
-      <span class="step-pill step-pill--${st.state}">${stepStateLabel(st.state)}</span>
-    </div>
-    ${st.what ? `<div class="step-row"><span class="step-k">무엇을</span><span class="step-v">${escapeHtml(st.what)}</span></div>` : ""}
-    ${st.detail ? `<div class="step-row"><span class="step-k">${detailKey}</span><span class="step-v">${escapeHtml(st.detail)}</span></div>` : ""}
-  </div>`;
-}
-
-function glossaryBlock(p: RonaProgress): string {
+/** 용어집 — 한 줄 압축("용어 — 뜻"), 항상 펼침. */
+function glossaryLines(p: RonaProgress): string {
   if (p.glossary.length === 0) return "";
   const items = p.glossary
-    .map((g) => `<div class="gloss-item"><span class="gloss-term">${escapeHtml(g.term)}</span><span class="gloss-desc">${escapeHtml(g.desc)}</span></div>`)
+    .map((g) => `<div class="g1"><b>${escapeHtml(g.term)}</b> — ${escapeHtml(g.desc)}</div>`)
     .join("");
-  return `<div class="tl-head">용어</div><div class="gloss">${items}</div>`;
+  return `<div class="gloss"><div class="gloss-h">🤖 AI 용어 check!</div>${items}</div>`;
 }
 
-/** 서버 스냅샷의 단계 서사를 HTML 진행표와 동형으로 렌더(있으면 상세 뷰의 1순위). */
-function richDetail(s: SkillStatus, snapshot: RonaProgress): string {
-  const title = snapshot.goal.title ?? skillTitle(s);
-  const allDone = snapshot.steps.length > 0 && stepCounts(snapshot).done >= snapshot.steps.length;
+/** 서버 스냅샷 기반 진행 상세 — 서브카피 + 상태 + 진행바 + 3칸 단계 + 용어(도구 톤). */
+function progressDetail(s: SkillStatus, p: RonaProgress): string {
   return `<div class="detail">
-    <div class="goal-head">
-      <div class="card-head">
-        <div class="card-title">${escapeHtml(title)}</div>
-        <div class="card-status">${allDone ? "완주했어요" : s.offline ? "잠깐 쉬는 중" : "같이 보는 중"}</div>
-      </div>
-      ${snapshot.goal.oneLiner ? `<p class="goal-one">${escapeHtml(snapshot.goal.oneLiner)}</p>` : ""}
-    </div>
-    ${progressMeter(snapshot)}
-    ${wayBlock(snapshot)}
-    <div class="tl-head">단계 상세</div>
-    <div class="steps">${snapshot.steps.length > 0 ? snapshot.steps.map((st, i) => stepCard(st, i)).join("") : `<p class="tl-empty">아직 단계가 없어요.</p>`}</div>
-    ${glossaryBlock(snapshot)}
+    ${p.goal.oneLiner ? `<div class="subcopy">${escapeHtml(p.goal.oneLiner)}</div>` : ""}
+    ${statusLine(s, p)}
+    ${progressBar(p)}
+    <div class="steps">${stepWindow(p.steps)}</div>
+    ${glossaryLines(p)}
     ${detailActions(s.token)}
   </div>`;
 }
 
-function detailCard(s: SkillStatus): string {
-  if (s.data?.snapshot) return richDetail(s, s.data.snapshot);
+/** 스냅샷 없는 스킬(구버전 생성분 등) 폴백 — 단계 서사 대신 이벤트 카운트 + 진행 내역. */
+function fallbackDetail(s: SkillStatus): string {
   if (!s.data) {
-    if (s.offline) {
-      return `<div class="detail"><p class="empty-msg">현황을 못 불러왔어요. 잠깐 뒤 다시 볼게요.</p>
-        ${detailActions(s.token)}</div>`;
-    }
-    return `<div class="detail"><p class="empty-msg">아직 시작 전이에요. 스킬을 쓰기 시작하면 여기서 같이 따라갈게요.</p>
-      ${detailActions(s.token)}</div>`;
+    const msg = s.offline
+      ? "현황을 못 불러왔어요. 잠깐 뒤 다시 볼게요."
+      : "아직 시작 전이에요. 실습을 시작하면 여기에 단계가 나타나요.";
+    return `<div class="detail"><p class="empty-msg">${msg}</p>${detailActions(s.token)}</div>`;
   }
   const d = s.data;
   const sc = d.progress.stepCounts;
-  const status = d.progress.completed ? "완주했어요" : s.offline ? "잠깐 쉬는 중" : "같이 보는 중";
-  const synced = s.lastSyncedAt ? `마지막 확인 ${relTime(new Date(s.lastSyncedAt).toISOString())}` : "";
+  const status = d.progress.completed
+    ? `<div class="status status--done">완주했어요</div>`
+    : s.offline
+      ? `<div class="status status--idle"><span class="dot-idle" aria-hidden="true"></span>잠깐 쉬는 중</div>`
+      : `<div class="status"><span class="pulse" aria-hidden="true"></span>실습 진행 중</div>`;
   return `<div class="detail">
-    <div class="card-head">
-      <div class="card-title">${escapeHtml(d.generation.title)}</div>
-      <div class="card-status">${status}</div>
-    </div>
-    <p class="card-task">${d.generation.taskPreview ? escapeHtml(d.generation.taskPreview) : "이 스킬의 설명이 아직 등록되지 않았어요."}</p>
-    <div class="badge-row">
-      ${completionBadge(d.progress.completed)}
-      ${sc.user_note > 0 ? `<span class="chip">후기 보냄</span>` : ""}
-    </div>
+    ${d.generation.taskPreview ? `<div class="subcopy">${escapeHtml(d.generation.taskPreview)}</div>` : ""}
+    ${status}
     <div class="counts">
       <span><b>${sc.checkpoint_saved}</b> 단계</span>
       <span><b>${sc.tool_used}</b> 도구</span>
-      ${sc.direction_aligned + sc.step_consent > 0 ? `<span><b>${sc.direction_aligned + sc.step_consent}</b> 합의</span>` : ""}
+      ${sc.user_note > 0 ? `<span class="chip">후기 보냄</span>` : ""}
     </div>
     ${timelineSection(d.timeline)}
     ${detailActions(s.token)}
-    ${synced ? `<div class="synced">${synced}</div>` : ""}
+  </div>`;
+}
+
+function detailBody(s: SkillStatus): string {
+  return s.data?.snapshot ? progressDetail(s, s.data.snapshot) : fallbackDetail(s);
+}
+
+// 헤더 로고 — 핑크 배경박스 대신 작은 코랄 점(도구 톤).
+const DOT_LOGO = `<span class="dot-logo" aria-hidden="true"></span>`;
+
+/** 실습 1개 / 빈 상태용 헤더 — 코랄 점 + 제목 + 톱니. (제목 바가 창 드래그 핸들) */
+function bareHead(title: string): string {
+  return `<div class="panel-head panel-head--bare" title="여기를 잡고 옮기세요">
+    ${GRIP}
+    ${DOT_LOGO}
+    <span class="hd-title">${escapeHtml(title)}</span>
+    <button class="iconbtn" data-action="open-settings" aria-label="설정">${GEAR}</button>
+  </div>`;
+}
+
+/** 빈 상태 — 궤도 오브 + 자동 대기 안내(큰 수동 버튼 없음). 폴백은 설정 링크. */
+function emptyCard(): string {
+  return `<div class="panel-card empty">
+    ${bareHead("Rona")}
+    <div class="stage"><div class="orb"><div class="orb-ring"></div><div class="orb-orbit"></div><div class="orb-core"></div></div></div>
+    <div class="eh">AI로 오늘의 업무를<br>해결해볼까요?</div>
+    <div class="esub">터미널에서 Rona 실습을 시작하면<br>이 창에 자동으로 나타나요</div>
+    <div class="ewrap"><span class="ewait"><span class="pulse" aria-hidden="true"></span>실습을 기다리는 중</span></div>
+    <div class="emanual">안 보이나요? <a data-action="open-settings" role="button" tabindex="0">설정에서 확인 →</a></div>
   </div>`;
 }
 
 export function renderPanel(update: PetUpdate, selectedToken: string | null): string {
   const skills = update.all;
-  if (skills.length === 0) {
-    return `<div class="panel-card empty">
-      ${panelHead()}
-      <p class="empty-msg">아직 따라갈 스킬이 없어요. 맞춤 스킬을 설치하면 여기에 자동으로 나타나요.</p>
+  if (skills.length === 0) return emptyCard();
+
+  const selected = skills.find((s) => s.token === selectedToken) ?? update.active ?? skills[0];
+
+  // 실습 1개 → 리스트 숨김(개념적 1:1). 헤더에 실습명 직접.
+  if (skills.length === 1) {
+    return `<div class="panel-card">
+      ${bareHead(skillTitle(selected))}
+      ${detailBody(selected)}
     </div>`;
   }
 
-  const selected = skills.find((s) => s.token === selectedToken) ?? update.active ?? skills[0];
+  // 여럿 → "Rona 학습 현황" 헤더 + 전환 리스트 + 선택 실습 상세.
   const list = skills.map((s) => skillRow(s, s.token === selected.token)).join("");
-
   return `<div class="panel-card">
     ${panelHead()}
     <div class="list-head">스킬 ${skills.length}개</div>
     <div class="skill-list">${list}</div>
-    ${detailCard(selected)}
+    <div class="detail-titled">${DOT_LOGO}<span class="hd-title">${escapeHtml(skillTitle(selected))}</span></div>
+    ${detailBody(selected)}
   </div>`;
 }
