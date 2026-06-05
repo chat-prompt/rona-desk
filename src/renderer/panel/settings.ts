@@ -1,5 +1,6 @@
-// 설정 뷰 — 팝오버 내 토글(현황 ⇄ 설정). 숨긴 스킬 복원, 서버 주소, 알림, 테마, 버전.
-// 발견은 ~/.rona/installed 자동 — 폴더/토큰 수동 등록 UI 없음.
+// 설정 뷰 — 팝오버 내 토글(현황 ⇄ 설정). 숨긴 스킬 복원, 완주 알림, 버전.
+// 발견은 ~/.rona/installed 자동(폴더/토큰 수동 등록 UI 없음). 서버 주소는 dev 전용이라
+// UI 제거(config.json override 가능). 테마는 헤더 아이콘으로 이동.
 import type { ConfigSnapshot } from "../../shared/types";
 import { GRIP } from "./panel";
 
@@ -41,28 +42,11 @@ export function renderSettings(c: ConfigSnapshot): string {
         : ""
     }
 
-    <div class="set-sec">
-      <div class="set-label">서버 주소</div>
-      <div class="token-row">
-        <input id="set-baseurl" class="token-input" value="${escapeHtml(c.baseUrl)}" spellcheck="false" />
-        <button class="btn btn--sm" data-action="save-baseurl">저장</button>
-      </div>
-    </div>
-
     <div class="set-row set-row--toggle">
       <span class="set-label" style="margin:0">완주 알림 받기</span>
       <button class="toggle${notify ? " toggle--on" : ""}" data-action="toggle-dnd" role="switch" aria-checked="${notify}" aria-label="완주 알림 받기">
         <span class="toggle-knob"></span>
       </button>
-    </div>
-
-    <div class="set-sec" style="margin-top:14px">
-      <div class="set-label">테마</div>
-      <div class="seg" role="group" aria-label="테마">
-        <button class="seg-btn${c.theme === "system" ? " seg-btn--on" : ""}" data-action="set-theme" data-value="system">시스템</button>
-        <button class="seg-btn${c.theme === "light" ? " seg-btn--on" : ""}" data-action="set-theme" data-value="light">라이트</button>
-        <button class="seg-btn${c.theme === "dark" ? " seg-btn--on" : ""}" data-action="set-theme" data-value="dark">다크</button>
-      </div>
     </div>
 
     <div class="set-foot">Rona Desk v${escapeHtml(c.version)}</div>

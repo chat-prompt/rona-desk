@@ -8,6 +8,7 @@ import type {
   RonaProgressStep,
   SkillEventType,
   SkillStatus,
+  ThemeMode,
   TimelineEntry,
 } from "../../shared/types";
 import { derivePhase } from "../../main/derive";
@@ -100,6 +101,14 @@ export const GRIP = `<svg class="grip" viewBox="0 0 8 14" width="8" height="14" 
 
 // 드롭다운 캐럿(▾) — 스킬이 여럿일 때 헤더 제목 옆에서 전환 메뉴를 연다.
 const CARET = `<svg class="caret" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>`;
+
+// 테마 아이콘 — 이모지 금지, SVG 프리미티브. system=대비원(자동) / light=해 / dark=달.
+const THEME_ICON: Record<ThemeMode, string> = {
+  system: `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none"/></svg>`,
+  light: `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.3 3.3l1 1M11.7 11.7l1 1M12.7 3.3l-1 1M4.3 11.7l-1 1"/></svg>`,
+  dark: `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></svg>`,
+};
+const THEME_LABEL: Record<ThemeMode, string> = { system: "시스템", light: "라이트", dark: "다크" };
 
 /** 상세 하단 액션 — 새로고침 + 목록에서 제거(앱에서 숨김, 복원 가능). */
 function detailActions(token: string): string {
@@ -217,14 +226,16 @@ const DOT_LOGO = `<span class="dot-logo" aria-hidden="true"></span>`;
  * 카드 헤더 — 코랄 점 + 제목 + (전환 가능하면 ▾) + 톱니. 제목 바가 창 드래그 핸들.
  * switchable=true 면 제목+캐럿이 드롭다운 토글 버튼(스킬 여럿일 때).
  */
-function cardHead(title: string, opts: { switchable?: boolean; open?: boolean } = {}): string {
+function cardHead(title: string, opts: { switchable?: boolean; open?: boolean; theme?: ThemeMode } = {}): string {
   const titleEl = opts.switchable
     ? `<button class="hd-switch" data-action="toggle-skill-menu" aria-haspopup="listbox" aria-expanded="${opts.open ? "true" : "false"}"><span class="hd-title">${escapeHtml(title)}</span>${CARET}</button>`
     : `<span class="hd-title">${escapeHtml(title)}</span>`;
+  const theme = opts.theme ?? "system";
   return `<div class="panel-head" title="여기를 잡고 옮기세요">
     ${GRIP}
     ${DOT_LOGO}
     ${titleEl}
+    <button class="iconbtn" data-action="cycle-theme" aria-label="테마 바꾸기" title="테마: ${THEME_LABEL[theme]} (눌러서 전환)">${THEME_ICON[theme]}</button>
     <button class="iconbtn" data-action="open-settings" aria-label="설정">${GEAR}</button>
   </div>`;
 }
@@ -236,9 +247,9 @@ function skillMenu(skills: SkillStatus[], selectedToken: string): string {
 }
 
 /** 빈 상태 — 궤도 오브 + 자동 대기 안내(큰 수동 버튼 없음). 폴백은 설정 링크. */
-function emptyCard(): string {
+function emptyCard(theme: ThemeMode): string {
   return `<div class="panel-card empty">
-    ${cardHead("Rona")}
+    ${cardHead("Rona", { theme })}
     <div class="stage"><div class="orb"><div class="orb-ring"></div><div class="orb-orbit"></div><div class="orb-core"></div></div></div>
     <div class="eh">AI로 오늘의 업무를<br>해결해볼까요?</div>
     <div class="esub">터미널에서 Rona 실습을 시작하면<br>이 창에 자동으로 나타나요</div>
@@ -251,15 +262,20 @@ function emptyCard(): string {
  * 선택된 *1개* 실습만 카드로 보여준다. 여럿이면 헤더 제목을 ▾ 드롭다운으로 전환
  * (리스트 나열 안 함). menuOpen 이면 헤더 아래 전환 메뉴를 펼친다.
  */
-export function renderPanel(update: PetUpdate, selectedToken: string | null, menuOpen = false): string {
+export function renderPanel(
+  update: PetUpdate,
+  selectedToken: string | null,
+  menuOpen = false,
+  theme: ThemeMode = "system",
+): string {
   const skills = update.all;
-  if (skills.length === 0) return emptyCard();
+  if (skills.length === 0) return emptyCard(theme);
 
   const selected = skills.find((s) => s.token === selectedToken) ?? update.active ?? skills[0];
   const multi = skills.length > 1;
 
   return `<div class="panel-card">
-    ${cardHead(skillTitle(selected), { switchable: multi, open: menuOpen })}
+    ${cardHead(skillTitle(selected), { switchable: multi, open: menuOpen, theme })}
     ${multi && menuOpen ? skillMenu(skills, selected.token) : ""}
     ${detailBody(selected)}
   </div>`;

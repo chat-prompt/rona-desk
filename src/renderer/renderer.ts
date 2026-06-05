@@ -30,7 +30,7 @@ function paint(): void {
     return;
   }
   if (selectedToken && last && !last.all.some((s) => s.token === selectedToken)) selectedToken = null;
-  panelEl.innerHTML = last ? renderPanel(last, selectedToken, skillMenuOpen) : "";
+  panelEl.innerHTML = last ? renderPanel(last, selectedToken, skillMenuOpen, cfg?.theme ?? "system") : "";
 }
 
 function onPetUpdate(u: PetUpdate): void {
@@ -96,9 +96,12 @@ panelEl.addEventListener("click", (e) => {
       void window.rona.setDnd(receivingNow).then(refreshConfig); // 받는 중→끔(dnd on)
       break;
     }
-    case "set-theme": {
-      const mode = act?.getAttribute("data-value") as ThemeMode | null;
-      if (mode) void window.rona.setTheme(mode).then(refreshConfig);
+    case "cycle-theme": {
+      // 헤더 테마 아이콘 — 시스템 → 라이트 → 다크 순환.
+      const order: ThemeMode[] = ["system", "light", "dark"];
+      const cur = cfg?.theme ?? "system";
+      const next = order[(order.indexOf(cur) + 1) % order.length];
+      void window.rona.setTheme(next).then(refreshConfig);
       break;
     }
     case "dismiss-skill": {
@@ -116,12 +119,6 @@ panelEl.addEventListener("click", (e) => {
         if (act) setButtonLoading(act, "복원 중…");
         void window.rona.restoreSkill(value).then(refreshConfig);
       }
-      break;
-    }
-    case "save-baseurl": {
-      const input = document.getElementById("set-baseurl") as HTMLInputElement | null;
-      const v = input?.value.trim();
-      if (v) void window.rona.setBaseUrl(v).then(refreshConfig);
       break;
     }
   }
