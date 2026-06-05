@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+  Rona 진행표 샘플 (검증용) — 실제 Rona 스킬 'knowledge-base-organization'(rona-fee45e31)의
+  진짜 단계로 작성. 템플릿 아님 — SKILL.md "## 3. 단계" 섹션에서 그대로 가져옴.
+  실제 install/실습이 이 파일을 작업 폴더에 생성·갱신한다는 전제의 목업.
+  현재: 2단계(skill 단위 결정) active.
+-->
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>스터디 마케팅 자료 정리 — 진행표</title>
+  <script id="rona-progress-data" type="application/json">
+  {
+    "goal": {
+      "title": "스터디 마케팅 자료·skill 폴더 정리",
+      "oneLiner": "흩어진 스터디 마케팅 자료를 에이전트가 바로 쓸 수 있는 팀 공용 구조로 정리해요.",
+      "where": "스터디 마케팅 에이전트 워크스페이스 폴더",
+      "what": "업무 자료를 주제별로 나누고, 반복 업무를 skill 단위로 묶어 팀 공용 입력 구조로 바꾼다",
+      "how": "터미널에서 Claude Code와 단계별로 같이 파일을 만들며 진행"
+    },
+    "steps": [
+      {
+        "title": "업무 자료를 주제별로 나누기",
+        "state": "done",
+        "what": "타겟 오디언스·콘텐츠 소재·채널 운영·캠페인 기획·성과 분석 5개 상위 분류를 만들어요",
+        "detail": "docs/study-marketing-taxonomy.md 에 분류 기준이 정리됐어요"
+      },
+      {
+        "title": "반복 기능별 skill 단위 결정하기",
+        "state": "active",
+        "what": "SNS 콘텐츠·캠페인 성과·광고 카피처럼 하나의 응집된 반복 업무를 skill 하나로 잡아요",
+        "detail": "다음 액션: skill 후보를 고르면 docs/study-marketing-skill-map.md 가 만들어져요"
+      },
+      {
+        "title": "에이전트 입력용 문서 템플릿 작성",
+        "state": "wait",
+        "what": "업무 자료용 / skill용 Markdown 템플릿을 만들어 누구나 같은 구조로 추가하게 해요",
+        "detail": ""
+      },
+      {
+        "title": "폴더 구조·파일 네이밍 규칙 정리",
+        "state": "wait",
+        "what": "study-marketing-agent/, knowledge-base/, skills/ 구조와 이름 규칙을 문서로 남겨요",
+        "detail": ""
+      },
+      {
+        "title": "팀원 공유용 사용 가이드 작성",
+        "state": "wait",
+        "what": "README에 빠른 시작·트리거 치트시트·새 자료/skill 추가법을 담아요",
+        "detail": ""
+      }
+    ],
+    "glossary": [
+      { "term": "knowledge-base", "desc": "에이전트가 찾아 쓰는 업무 지식을 주제별로 모아둔 폴더" },
+      { "term": "skill", "desc": "하나의 응집된 반복 업무를 묶은 단위 — SKILL.md를 담은 폴더" },
+      { "term": "frontmatter", "desc": "문서 맨 위에 적는 제목·분류 같은 메타 정보 영역" },
+      { "term": "트리거 키워드", "desc": "이 skill을 언제 켤지 알려주는 대표 단어들" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <h1>스터디 마케팅 자료·skill 폴더 정리</h1>
+  <p>이 파일은 코코가 읽는 진행표예요. 실제 Rona 스킬의 단계로 채워졌어요.</p>
+</body>
+</html>
