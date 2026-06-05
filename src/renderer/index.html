@@ -41,7 +41,7 @@
         color: var(--text);
       }
       #app { display: flex; flex-direction: column; height: 100%; padding: 10px 10px 12px; }
-      .panel { flex: 1 1 auto; overflow-y: auto; }
+      .panel { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; }
       /* 창 드래그: 카드 헤더(제목 바)를 핸들로. 투명창에선 칠해진 영역만 드래그가 잡혀 헤더가 안정적. */
       .panel-head, .set-head { -webkit-app-region: drag; cursor: grab; }
       .panel-head:active, .set-head:active { cursor: grabbing; }
@@ -59,6 +59,7 @@
       }
       .iconbtn:hover { background: var(--coral-tint); color: var(--coral); }
       .panel-card {
+        flex: 1 0 auto; /* 창 높이를 채우되 내용보다 작아지진 않음(넘치면 .panel 이 스크롤) → 어느 크기든 창=카드 */
         background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: 16px;
