@@ -139,29 +139,34 @@ function statusLine(s: SkillStatus, p: RonaProgress): string {
  * 남은 스텝을 한눈에 보이도록 *전체* 순회한다(직전 3칸 창 폐기). 전체 진척은 진행바 숫자로도 표시.
  * 긴 목록은 창 스크롤(.panel overflow-y)로 흡수.
  */
-function stepList(steps: RonaProgressStep[]): string {
+export function stepList(steps: RonaProgressStep[]): string {
   if (steps.length === 0) return `<p class="tl-empty">아직 단계가 없어요.</p>`;
+  // 전부 done(active 0개)이면 현재 카드 없이 모든 단계를 완료 ✓로 렌더한다.
+  // (예전엔 i를 마지막 스텝으로 폴백시켜, 헤더는 "완주했어요"인데 마지막 단계는
+  //  "마지막!/이것만 끝내면 완주예요" 미완 카드로 그리는 자기모순이 있었다.)
+  const allDone = steps.every((s) => s.state === "done");
   let i = steps.findIndex((s) => s.state === "active");
   if (i < 0) i = steps.findIndex((s) => s.state !== "done");
-  if (i < 0) i = steps.length - 1;
   const last = steps.length - 1;
 
   let nextLabelDrawn = false;
   return steps
     .map((st, idx) => {
-      if (idx === i) {
+      if (!allDone && idx === i) {
         const pill = idx === last ? "마지막!" : "진행 중";
+        const desc = st.what ? `<div class="current-sub">${escapeHtml(st.what)}</div>` : "";
         const tail = idx === last ? `<div class="current-sub">이것만 끝내면 완주예요</div>` : "";
         return `<div class="current"><div class="current-top">
           <span class="smark">${idx + 1}</span>
           <span class="current-t">${escapeHtml(st.title)}</span>
           <span class="current-pill">${pill}</span>
-        </div>${tail}</div>`;
+        </div>${desc}${tail}</div>`;
       }
-      const upcoming = idx > i;
+      const upcoming = !allDone && idx > i;
       const label = !nextLabelDrawn && upcoming ? ((nextLabelDrawn = true), `<div class="nextlabel">다음</div>`) : "";
       const mark = upcoming ? String(idx + 1) : TICK;
-      return `${label}<div class="srow ${upcoming ? "next" : "done"}"><span class="smark">${mark}</span><span class="stext">${escapeHtml(st.title)}</span></div>`;
+      const desc = st.what ? `<span class="sdesc">${escapeHtml(st.what)}</span>` : "";
+      return `${label}<div class="srow ${upcoming ? "next" : "done"}"><span class="smark">${mark}</span><div class="scol"><span class="stext">${escapeHtml(st.title)}</span>${desc}</div></div>`;
     })
     .join("");
 }
