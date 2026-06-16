@@ -19,9 +19,9 @@
     "@types/node": "^20.16.5",
     "electron": "^31.7.0",
     "electron-builder": "^25.1.8",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
