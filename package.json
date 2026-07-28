@@ -18,14 +18,14 @@
   "devDependencies": {
     "@types/node": "^20.16.5",
     "electron": "^31.7.0",
-    "electron-builder": "^25.1.8",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.3",
     "vitest": "^2.1.8"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
-    "electron-updater": "^6.3.9",
+    "electron-updater": "^6.8.9",
     "glob": "^11.0.0"
   }
 }
